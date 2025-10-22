@@ -1,117 +1,136 @@
-// context/AuthContext.tsx
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { createContext, useContext, useEffect, useReducer } from 'react';
-import { AuthState } from '../types/user';
+import { useRouter, useSegments } from "expo-router";
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { authService } from "../services/authService";
+import { localStorage } from "../storage/localStorage";
+import { AuthState } from "../types";
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
-  signUp: (userData: SignUpData) => Promise<void>;
+  signup: (userData: SignupData) => Promise<any>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const authReducer = (state: AuthState, action: any): AuthState => {
-  switch (action.type) {
-    case "SET_LOADING":
-      return { ...state, loading: action.payload };
-    case "LOGIN_SUCCESS":
-      return {
-        ...state,
-        user: action.payload.user,
-        token: action.payload.token,
-        isAuthenticated: true,
-        loading: false,
-      };
-    case "LOGOUT":
-      return {
-        user: null,
-        token: null,
-        isAuthenticated: false,
-        loading: false,
-      };
-    default:
-      return state;
-  }
-};
+interface SignupData {
+  first_name: string;
+  middle_name: string;
+  last_name: string;
+  gender: string;
+  contact_number: string;
+  password: string;
+  email: string;
+  barangay: string;
+  role: string;
+}
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [state, dispatch] = useReducer(authReducer, {
+  const [state, setState] = useState<AuthState>({
     user: null,
     token: null,
     isAuthenticated: false,
     loading: true,
   });
 
+  const router = useRouter();
+  const segments = useSegments();
+
   useEffect(() => {
-    checkAuthStatus();
+    checkAuth();
   }, []);
 
-  const checkAuthStatus = async () => {
+  useEffect(() => {
+    if (!state.loading) {
+      const inAuthGroup = segments[0] === "auth";
+
+      if (!state.user && !inAuthGroup) {
+        router.replace("/auth/login");
+      } else if (state.user && inAuthGroup) {
+        router.replace("/resident");
+      }
+    }
+  }, [state.user, state.loading, segments]);
+
+  const checkAuth = async (): Promise<void> => {
     try {
-      const token = await AsyncStorage.getItem("authToken");
-      const userData = await AsyncStorage.getItem("userData");
+      const token = await localStorage.getToken();
+      const userData = await localStorage.getUser();
 
       if (token && userData) {
-        dispatch({
-          type: "LOGIN_SUCCESS",
-          payload: {
-            token,
-            user: JSON.parse(userData),
-          },
+        setState({
+          user: userData,
+          token,
+          isAuthenticated: true,
+          loading: false,
         });
       }
     } catch (error) {
       console.error("Auth check failed:", error);
     } finally {
-      dispatch({ type: "SET_LOADING", payload: false });
+      setState((prev) => ({ ...prev, loading: false }));
     }
   };
 
-  const login = async (email: string, password: string) => {
-    dispatch({ type: "SET_LOADING", payload: true });
-
+  const login = async (email: string, password: string): Promise<void> => {
     try {
-      // API call to login
-      const response = await api.post("/auth/login", { email, password });
-
-      await AsyncStorage.setItem("authToken", response.data.token);
-      await AsyncStorage.setItem(
-        "userData",
-        JSON.stringify(response.data.user)
-      );
-
-      dispatch({
-        type: "LOGIN_SUCCESS",
-        payload: response.data,
-      });
+      const response = await authService.login(email, password);
+      await localStorage.setToken(response.token);
+      /*       await localStorage.setUser(response.user);
+       */
+      /*   setState({
+        user: response.user,
+        token: response.token,
+        isAuthenticated: true,
+        loading: false,
+      }); */
     } catch (error) {
-      dispatch({ type: "SET_LOADING", payload: false });
       throw error;
     }
   };
 
-  const logout = async () => {
-    await AsyncStorage.multiRemove(["authToken", "userData"]);
-    dispatch({ type: "LOGOUT" });
+  const signup = async (userData: SignupData) => {
+    try {
+      let response = await authService.signup({
+        ...userData,
+        role: "resident",
+      });
+
+      // After successful signup, navigate to login
+      router.replace("/auth/login");
+      return response;
+    } catch (error) {
+      throw error;
+    }
   };
 
-  const signUp = async (userData: SignUpData) => {
-    // Resident self-signup logic
-    const response = await api.post("/auth/signup", userData);
-    return response.data;
+  const logout = async (): Promise<void> => {
+    await localStorage.clearAuth();
+    setState({
+      user: null,
+      token: null,
+      isAuthenticated: false,
+      loading: false,
+    });
+    router.replace("/auth/login");
   };
 
   return (
-    <AuthContext.Provider value={{ ...state, login, logout, signUp }}>
+    <AuthContext.Provider
+      value={{
+        ...state,
+        login,
+        logout,
+        signup,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
 };
 
-export const useAuth = () => {
+export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error("useAuth must be used within AuthProvider");
