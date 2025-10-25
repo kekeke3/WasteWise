@@ -1,86 +1,145 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useNetworkStatus } from '../hooks/useNetworkStatus';
-import { offlineQueue } from '../storage/offlineQueue';
-import { PendingAction } from '../types';
+import NetInfo from '@react-native-community/netinfo';
+import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import { localStorage } from '../storage/localStorage';
+
+export interface PendingAction {
+  id: string;
+  type: string;
+  data: any;
+  timestamp: number;
+  retries: number;
+}
 
 interface OfflineContextType {
-  pendingActions: PendingAction[];
-  addPendingAction: (
-    action: Omit<PendingAction, "id" | "timestamp" | "status">
-  ) => Promise<void>;
-  clearPendingActions: () => Promise<void>;
   isOnline: boolean;
+  pendingActions: PendingAction[];
+  addPendingAction: (action: Omit<PendingAction, 'id' | 'timestamp' | 'retries'>) => Promise<void>;
+  removePendingAction: (actionId: string) => Promise<void>;
+  clearPendingActions: () => Promise<void>;
+  syncPendingActions: () => Promise<void>;
 }
 
 const OfflineContext = createContext<OfflineContextType | undefined>(undefined);
 
-export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+interface OfflineProviderProps {
+  children: ReactNode;
+}
+
+export const OfflineProvider: React.FC<OfflineProviderProps> = ({ children }) => {
+  const [isOnline, setIsOnline] = useState<boolean>(true);
   const [pendingActions, setPendingActions] = useState<PendingAction[]>([]);
-  const { isOnline } = useNetworkStatus();
 
   useEffect(() => {
+    // Load pending actions from storage on mount
     loadPendingActions();
+    
+    // Subscribe to network state changes
+    const unsubscribe = NetInfo.addEventListener(state => {
+      setIsOnline(state.isConnected ?? false);
+      
+      // Auto-sync when coming back online
+      if (state.isConnected) {
+        syncPendingActions();
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
-  useEffect(() => {
-    if (isOnline && pendingActions.length > 0) {
-      syncPendingActions();
+  const loadPendingActions = async () => {
+    try {
+      const actions = await localStorage.getPendingActions();
+      setPendingActions(actions);
+    } catch (error) {
+      console.error('Error loading pending actions:', error);
     }
-  }, [isOnline]);
-
-  const loadPendingActions = async (): Promise<void> => {
-    const actions = await offlineQueue.getPendingActions();
-    setPendingActions(actions);
   };
 
-  const addPendingAction = async (
-    action: Omit<PendingAction, "id" | "timestamp" | "status">
-  ): Promise<void> => {
+  const savePendingActions = async (actions: PendingAction[]) => {
+    try {
+      await localStorage.setPendingActions(actions);
+      setPendingActions(actions);
+    } catch (error) {
+      console.error('Error saving pending actions:', error);
+    }
+  };
+
+  const addPendingAction = async (action: Omit<PendingAction, 'id' | 'timestamp' | 'retries'>) => {
     const newAction: PendingAction = {
       ...action,
-      id: Date.now().toString(),
-      timestamp: new Date().toISOString(),
-      status: "pending",
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      timestamp: Date.now(),
+      retries: 0,
     };
 
-    await offlineQueue.addAction(newAction);
-    setPendingActions((prev) => [...prev, newAction]);
+    const updatedActions = [...pendingActions, newAction];
+    await savePendingActions(updatedActions);
   };
 
-  const syncPendingActions = async (): Promise<void> => {
-    const actions = await offlineQueue.getPendingActions();
+  const removePendingAction = async (actionId: string) => {
+    const updatedActions = pendingActions.filter(action => action.id !== actionId);
+    await savePendingActions(updatedActions);
+  };
 
-    for (const action of actions) {
+  const clearPendingActions = async () => {
+    await savePendingActions([]);
+  };
+
+  const syncPendingActions = async () => {
+    if (!isOnline || pendingActions.length === 0) return;
+
+    const successfulActions: string[] = [];
+    
+    for (const action of pendingActions) {
       try {
-        // Implement your sync logic here based on action type
-        console.log("Syncing action:", action);
-
-        // Remove from queue after successful sync
-        await offlineQueue.removeAction(action.id);
+        // Simulate API calls for different action types
+        switch (action.type) {
+          case 'SUBMIT_REPORT':
+            // await reportService.submitReport(action.data);
+            console.log('Syncing report:', action.data);
+            break;
+          case 'SUBMIT_COLLECTOR_REPORT':
+            // await collectorService.submitReport(action.data);
+            console.log('Syncing collector report:', action.data);
+            break;
+          default:
+            console.log('Syncing unknown action:', action);
+        }
+        
+        successfulActions.push(action.id);
       } catch (error) {
-        console.error("Failed to sync action:", error);
+        console.error(`Failed to sync action ${action.id}:`, error);
+        
+        // Increment retry count
+        const updatedActions = pendingActions.map(a => 
+          a.id === action.id ? { ...a, retries: a.retries + 1 } : a
+        );
+        await savePendingActions(updatedActions);
       }
     }
 
-    setPendingActions([]);
+    // Remove successfully synced actions
+    if (successfulActions.length > 0) {
+      const remainingActions = pendingActions.filter(
+        action => !successfulActions.includes(action.id)
+      );
+      await savePendingActions(remainingActions);
+    }
   };
 
-  const clearPendingActions = async (): Promise<void> => {
-    await offlineQueue.clearActions();
-    setPendingActions([]);
+  const value: OfflineContextType = {
+    isOnline,
+    pendingActions,
+    addPendingAction,
+    removePendingAction,
+    clearPendingActions,
+    syncPendingActions,
   };
 
   return (
-    <OfflineContext.Provider
-      value={{
-        pendingActions,
-        addPendingAction,
-        clearPendingActions,
-        isOnline,
-      }}
-    >
+    <OfflineContext.Provider value={value}>
       {children}
     </OfflineContext.Provider>
   );
@@ -88,8 +147,8 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({
 
 export const useOffline = (): OfflineContextType => {
   const context = useContext(OfflineContext);
-  if (!context) {
-    throw new Error("useOffline must be used within OfflineProvider");
+  if (context === undefined) {
+    throw new Error('useOffline must be used within an OfflineProvider');
   }
   return context;
 };

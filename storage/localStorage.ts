@@ -25,4 +25,5 @@ export const localStorage = {
   async clearAuth(): Promise<void> {
     await AsyncStorage.multiRemove([TOKEN_KEY, USER_KEY]);
   },
+  
 };

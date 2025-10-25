@@ -12,15 +12,17 @@ import {
   ModalHeader,
   ScrollView,
   Text,
-  Toast,
-  ToastDescription,
-  ToastTitle,
   useToast,
   VStack,
 } from "@gluestack-ui/themed";
 
+import { AppToast } from "@/components/ui/AppToast";
+import { Loader } from "@/components/ui/Loader";
+import { useAuth } from "@/context/AuthContext";
+import { barangayService } from "@/services/barangayService";
+import { Barangay as BarangayType } from "@/types/index";
 import { Link } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Keyboard,
   KeyboardAvoidingView,
@@ -28,9 +30,6 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
 } from "react-native";
-import { Loader } from "../../components/ui/Loader";
-import { useAuth } from "../../context/AuthContext";
-import { BARANGAYS } from "../../utils/constants";
 
 interface SignupFormData {
   first_name: string;
@@ -41,7 +40,8 @@ interface SignupFormData {
   password: string;
   confirmPassword: string;
   email: string;
-  barangay: string;
+  barangay: string; // barangay _id
+  barangay_name?: string; // barangay_name for UI display
   role: string;
 }
 
@@ -59,6 +59,7 @@ export default function Signup() {
     role: "resident",
   });
 
+  const [barangays, setBarangays] = useState<BarangayType[]>([]);
   const [loading, setLoading] = useState(false);
   const [isBarangayModalVisible, setBarangayModalVisible] = useState(false);
   const [isGenderModalVisible, setGenderModalVisible] = useState(false);
@@ -66,9 +67,43 @@ export default function Signup() {
   const { signup } = useAuth();
   const toast = useToast();
 
+  useEffect(() => {
+    const fetchBarangays = async () => {
+      try {
+        const response = await barangayService.getAllBarangay();
+
+        setBarangays(response);
+      } catch (error) {
+        console.error("Failed to load barangays:", error);
+        toast.show({
+          placement: "top right",
+          render: ({ id }) => (
+            <AppToast
+              id={id}
+              type="error"
+              title="Error"
+              description="Failed to load barangays."
+            />
+          ),
+        });
+      }
+    };
+    fetchBarangays();
+  }, []);
+
   const handleSignup = async (): Promise<void> => {
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords do not match");
+      toast.show({
+        placement: "top right",
+        render: ({ id }) => (
+          <AppToast
+            id={id}
+            type="attention"
+            title="Signup Failed"
+            description="Passwords do not match"
+          />
+        ),
+      });
       return;
     }
 
@@ -79,63 +114,88 @@ export default function Signup() {
       !formData.barangay ||
       !formData.gender
     ) {
-      alert("Please fill in all required fields");
+      toast.show({
+        placement: "top right",
+        render: ({ id }) => (
+          <AppToast
+            id={id}
+            type="attention"
+            title="Signup Failed"
+            description="Please fill in all required fields"
+          />
+        ),
+      });
       return;
     }
 
     setLoading(true);
     try {
-      const response: { data: any } = await signup({
+      console.log(formData.barangay);
+      const response = await signup({
         first_name: formData.first_name,
         middle_name: formData.middle_name,
         last_name: formData.last_name,
-        gender: formData.gender,
+        gender: formData.gender.toLowerCase(),
         contact_number: formData.contact_number,
         password: formData.password,
         email: formData.email,
-        role: "resident", // Fixed role as resident
+        role: "resident",
         barangay: formData.barangay,
       });
-      alert(response.data);
+      console.log(formData);
+
       toast.show({
-        placement: "top",
-        render: ({ id }) => {
-          return (
-            <Toast nativeID={id} action="success" variant="solid">
-              <ToastTitle>Success</ToastTitle>
-              <ToastDescription>response.data</ToastDescription>
-            </Toast>
-          );
-        },
+        placement: "top right",
+        render: ({ id }) => (
+          <AppToast
+            id={id}
+            type="success"
+            title="Signup Success"
+            description={response.data}
+          />
+        ),
       });
     } catch (error: any) {
-      alert("Signup failed: " + error.message);
+      toast.show({
+        placement: "top right",
+        render: ({ id }) => (
+          <AppToast
+            id={id}
+            type="error"
+            title="Signup Failed"
+            description={
+              error?.response?.data?.message || "Something went wrong."
+            }
+          />
+        ),
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredBarangays = BARANGAYS.filter((b) =>
-    b.toLowerCase().includes(search.toLowerCase())
+  const filteredBarangays = barangays.filter((b) =>
+    b.barangay_name.toLowerCase().includes(search.toLowerCase())
   );
 
-  const genders = ["Male", "Female", "Other"];
+  const genders = ["Male", "Female"];
 
   if (loading) return <Loader />;
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: "white" }}
+      style={{ flex: 1 }}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 0}
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <ScrollView
           contentContainerStyle={{
             flexGrow: 1,
             justifyContent: "center",
+            backgroundColor: "white",
           }}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
           <VStack space="lg" px="$6" py="$6">
             <Box alignItems="center" mb="$4">
@@ -271,8 +331,8 @@ export default function Signup() {
                   paddingHorizontal: 12,
                 }}
               >
-                <Text color={formData.barangay ? "$black" : "$gray"}>
-                  {formData.barangay || "Select Barangay *"}
+                <Text color={formData.barangay_name ? "$black" : "$gray"}>
+                  {formData.barangay_name || "Select Barangay *"}
                 </Text>
               </TouchableOpacity>
 
@@ -297,11 +357,15 @@ export default function Signup() {
                     <ScrollView style={{ maxHeight: 300 }}>
                       {filteredBarangays.map((item, index) => (
                         <TouchableOpacity
-                          key={`${item}-${index}`}
+                          key={`${item._id}-${index}`}
                           onPress={() => {
-                            setFormData({ ...formData, barangay: item });
+                            setFormData({
+                              ...formData,
+                              barangay: item._id, // store the ID
+                              barangay_name: item.barangay_name, // store name just for display
+                            });
                             setBarangayModalVisible(false);
-                            setSearch(""); // Clear search after selection
+                            setSearch("");
                           }}
                           style={{
                             paddingVertical: 10,
@@ -309,7 +373,7 @@ export default function Signup() {
                             borderColor: "#eee",
                           }}
                         >
-                          <Text>{item}</Text>
+                          <Text>{item.barangay_name}</Text>
                         </TouchableOpacity>
                       ))}
                     </ScrollView>

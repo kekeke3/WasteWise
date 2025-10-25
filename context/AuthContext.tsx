@@ -55,36 +55,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const checkAuth = async (): Promise<void> => {
     try {
-      const token = await localStorage.getToken();
       const userData = await localStorage.getUser();
 
-      if (token && userData) {
+      if (userData) {
         setState({
           user: userData,
-          token,
+          token: null,
           isAuthenticated: true,
+          loading: false,
+        });
+      } else {
+        setState({
+          user: null,
+          token: null,
+          isAuthenticated: false,
           loading: false,
         });
       }
     } catch (error) {
       console.error("Auth check failed:", error);
-    } finally {
-      setState((prev) => ({ ...prev, loading: false }));
+      setState({
+        user: null,
+        token: null,
+        isAuthenticated: false,
+        loading: false,
+      });
     }
   };
 
   const login = async (email: string, password: string): Promise<void> => {
     try {
       const response = await authService.login(email, password);
-      await localStorage.setToken(response.token);
-      /*       await localStorage.setUser(response.user);
-       */
-      /*   setState({
+      console.log(response);
+
+      // Save user data (no token)
+      await localStorage.setUser(response.user);
+
+      setState({
         user: response.user,
-        token: response.token,
+        token: null, // no token
         isAuthenticated: true,
         loading: false,
-      }); */
+      });
     } catch (error) {
       throw error;
     }

@@ -1,14 +1,13 @@
 import { Tabs } from "expo-router";
 import {
-  Calendar,
+  Clock,
   Flag,
-  History,
   Home,
   MapPin,
   Settings as SettingsIcon,
 } from "lucide-react-native";
 
-export default function ResidentLayout() {
+export default function CollectorLayout() {
   return (
     <Tabs
       screenOptions={{
@@ -16,7 +15,7 @@ export default function ResidentLayout() {
         tabBarStyle: {
           backgroundColor: "#ffffff",
         },
-        tabBarActiveTintColor: "#007BFF",
+        tabBarActiveTintColor: "#10B981",
         tabBarInactiveTintColor: "#999999",
       }}
     >
@@ -29,20 +28,18 @@ export default function ResidentLayout() {
       />
 
       <Tabs.Screen
-        name="schedule"
+        name="routes"
         options={{
-          title: "Schedule",
-          tabBarIcon: ({ color, size }) => (
-            <Calendar color={color} size={size} />
-          ),
+          title: "Routes",
+          tabBarIcon: ({ color, size }) => <MapPin color={color} size={size} />,
         }}
       />
 
       <Tabs.Screen
-        name="track-collectors"
+        name="attendance"
         options={{
-          title: "Track",
-          tabBarIcon: ({ color, size }) => <MapPin color={color} size={size} />,
+          title: "Attendance",
+          tabBarIcon: ({ color, size }) => <Clock color={color} size={size} />,
         }}
       />
 
@@ -54,17 +51,7 @@ export default function ResidentLayout() {
         }}
       />
 
-      <Tabs.Screen
-        name="history"
-        options={{
-          title: "History",
-          tabBarIcon: ({ color, size }) => (
-            <History color={color} size={size} />
-          ),
-        }}
-      />
-
-      {/*    <Tabs.Screen
+      {/*       <Tabs.Screen
         name="notifications"
         options={{
           title: "Notifications",

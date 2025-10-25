@@ -8,8 +8,23 @@
     "scheme": "wastewise",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": ["**/*"],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "This app uses your location to track garbage collection routes and provide accurate service.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "This app uses your location to track garbage collection routes even when the app is in the background.",
+        "UIBackgroundModes": ["location", "fetch"]
+      },
+      "config": {
+        "googleMapsApiKey": "AIzaSyAwW8nbqBraswCdeLt7WgqH814LxGf2kQg"
+      },
+      "bundleIdentifier": "com.geee12.WasteWise"
     },
     "android": {
       "adaptiveIcon": {
@@ -19,24 +34,45 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION"
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyAwW8nbqBraswCdeLt7WgqH814LxGf2kQg"
+        }
+      },
+      "package": "com.geee12.WasteWise"
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon.png",
+      "bundler": "metro"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/images/splash.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",
           "dark": {
+            "image": "./assets/images/splash-dark.png",
             "backgroundColor": "#000000"
           }
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow WasteWise to use your location for route tracking and collection monitoring.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true
         }
       ]
     ],

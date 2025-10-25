@@ -1,8 +1,8 @@
 import { Stack } from "expo-router";
-import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 
 import { AuthProvider } from "@/context/AuthContext";
+import { OfflineProvider } from "@/context/OfflineContext";
 import { customConfig } from "@/📄 gluestack-ui.config";
 import { GluestackUIProvider } from "@gluestack-ui/themed";
 import { ToastProvider } from "@gluestack-ui/toast";
@@ -16,11 +16,14 @@ export default function RootLayout() {
     <GluestackUIProvider config={customConfig}>
       <ToastProvider>
         <AuthProvider>
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="index" />
-            <Stack.Screen name="auth" />
-          </Stack>
-          <StatusBar style="auto" />
+          <OfflineProvider>
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="index" />
+              <Stack.Screen name="auth" />
+            </Stack>
+            {/*             <StatusBar style="auto" />
+             */}{" "}
+          </OfflineProvider>
         </AuthProvider>
       </ToastProvider>
     </GluestackUIProvider>

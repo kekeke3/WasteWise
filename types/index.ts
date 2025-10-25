@@ -1,30 +1,32 @@
 export interface User {
-  id: string;
-  email: string;
-  first_Name: string;
-  last_Name: string;
-  role: string;
-  barangay: string;
-  phoneNumber?: string;
-  address?: string;
-  isActive?: boolean;
-  createdAt?: string;
-}
-
-/* export interface User {
   _id: string;
   first_name: string;
+  middle_name: string;
   last_name: string;
+  gender: "male" | "female";
+  contact_number: string;
   email: string;
-  role: string;
-  barangay?: string;
-  contact_number?: string;
-  address?: string;
-} */
+  role:
+    | "admin"
+    | "resident"
+    | "enro_staff_monitoring"
+    | "enro_staff_head"
+    | "enro_staff_scheduler"
+    | "enro_staff_eswm_section_head"
+    | "barangay_official"
+    | "garbage_collector";
+  route?: string;
+  role_action?: string;
+  is_disabled: boolean;
+  is_verified: boolean;
+  verified_at?: string | null;
+  disabled_at?: string | null;
+  created_at?: string | null;
+}
 
 export interface AuthState {
-  user: User | null;
-  token: string | null;
+  user: any;
+  token?: string | null; // optional
   isAuthenticated: boolean;
   loading: boolean;
 }
@@ -40,6 +42,12 @@ export interface Report {
   createdAt: string;
   urgency: "low" | "medium" | "high";
   response?: string;
+}
+
+export interface Barangay {
+  _id: string;
+  barangay_name: string;
+  created_at?: string;
 }
 
 export interface CollectionSchedule {

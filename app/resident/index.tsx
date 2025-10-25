@@ -11,36 +11,49 @@ import {
 } from "@gluestack-ui/themed";
 import { Link } from "expo-router";
 import React from "react";
-import { Loader } from "../../components/ui/Loader";
+import MapView, { Marker } from "react-native-maps";
 import { useAuth } from "../../context/AuthContext";
 import { useOffline } from "../../context/OfflineContext";
-import { useFetch } from "../../hooks/useFetch";
-import { CollectionSchedule } from "../../types";
-
-interface ScheduleResponse {
-  data: CollectionSchedule;
-}
+import {
+  mockUser,
+  staticCollectors,
+  staticSchedule,
+} from "../../data/staticData";
 
 export default function ResidentDashboard() {
   const { user } = useAuth();
   const { pendingActions, isOnline } = useOffline();
-  const { data: schedule, loading } =
-    useFetch<ScheduleResponse>("/schedules/current");
 
-  if (loading) return <Loader />;
+  // Use static data instead of API call
+  const schedule = staticSchedule[0]; // Next collection
+  const collectors = staticCollectors;
 
-  const getNextCollection = (): {
-    date: string;
-    time: string;
-    status: string;
-    type: string;
-  } => {
-    // Mock data - replace with actual API data
+  const getNextCollection = () => {
+    const today = new Date().getDay();
+    const days = [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+    ];
+
+    // Find next collection day
+    const nextCollection =
+      staticSchedule.find((item) => days.indexOf(item.day) >= today) ||
+      staticSchedule[0];
+
     return {
-      date: "2024-01-15",
-      time: "8:00 AM - 12:00 PM",
-      status: "scheduled",
-      type: "Regular Collection",
+      date: `Next ${nextCollection.day}`,
+      time: nextCollection.time,
+      status: nextCollection.status,
+      type:
+        nextCollection.type === "regular"
+          ? "Regular Collection"
+          : "Special Collection",
+      collector: collectors.find((c) => c.id === nextCollection.collectorId),
     };
   };
 
@@ -52,16 +65,83 @@ export default function ResidentDashboard() {
         {/* Welcome Section */}
         <Box>
           <Text size="2xl" fontWeight="$bold">
-            Welcome, {user?.firstName}!
+            Welcome, {user?.first_name || mockUser.first_name}{" "}
+            {user?.last_name || mockUser.last_name}!
           </Text>
-          <Text color="$secondary500">Barangay {user?.barangay}</Text>
+          <Text color="$secondary500">
+            Barangay {user?.barangay || mockUser.barangay}
+          </Text>
 
-          {/* Offline Indicator */}
           {!isOnline && (
             <Badge action="error" mt="$2">
               <BadgeText>Offline Mode</BadgeText>
             </Badge>
           )}
+        </Box>
+
+        {/* Map with Collector Locations */}
+        <Box>
+          <HStack justifyContent="space-between" alignItems="center" mb="$2">
+            <Text size="lg" fontWeight="$bold">
+              Live Collector Tracking
+            </Text>
+            <Link href="/resident/track-collectors" asChild>
+              <Button size="sm" variant="link">
+                <Text color="$primary600">View All</Text>
+              </Button>
+            </Link>
+          </HStack>
+
+          <Box h={200} borderRadius="$md" overflow="hidden">
+            <MapView
+              style={{ flex: 1 }}
+              initialRegion={{
+                latitude: 10.936,
+                longitude: 124.609,
+                latitudeDelta: 0.02,
+                longitudeDelta: 0.02,
+              }}
+              showsUserLocation={true}
+            >
+              {/* User location */}
+              <Marker
+                coordinate={{ latitude: 10.936, longitude: 124.609 }}
+                title="Your Location"
+                pinColor="blue"
+              />
+
+              {/* Collector locations */}
+              {collectors.map((collector, index) => (
+                <Marker
+                  key={collector.id}
+                  coordinate={collector.currentLocation}
+                  title={`Collector: ${collector.name}`}
+                  description={`Vehicle: ${collector.vehicle}`}
+                  pinColor="green"
+                />
+              ))}
+            </MapView>
+          </Box>
+
+          {/* Active Collectors List */}
+          <VStack space="xs" mt="$2">
+            {collectors.map((collector) => (
+              <HStack key={collector.id} space="sm" alignItems="center">
+                <Box w="$2" h="$2" bg="$success500" rounded="$full" />
+                <Text size="sm">
+                  {collector.name} - {collector.vehicle}
+                </Text>
+                <Badge
+                  size="sm"
+                  action={collector.status === "active" ? "success" : "warning"}
+                >
+                  <BadgeText>
+                    {collector.status === "active" ? "Active" : "On Break"}
+                  </BadgeText>
+                </Badge>
+              </HStack>
+            ))}
+          </VStack>
         </Box>
 
         {/* Next Collection Card */}
@@ -84,6 +164,9 @@ export default function ResidentDashboard() {
               <Text>📅 {nextCollection.date}</Text>
               <Text>⏰ {nextCollection.time}</Text>
               <Text>🗑️ {nextCollection.type}</Text>
+              {nextCollection.collector && (
+                <Text>👷 {nextCollection.collector.name}</Text>
+              )}
             </VStack>
 
             <Link href="/resident/schedule" asChild>
@@ -112,30 +195,6 @@ export default function ResidentDashboard() {
             </Link>
           </HStack>
         </VStack>
-
-        {/* Pending Actions */}
-        {pendingActions.length > 0 && (
-          <Card>
-            <VStack space="sm">
-              <HStack justifyContent="space-between" alignItems="center">
-                <Text fontWeight="$bold">Pending Sync</Text>
-                <Badge>
-                  <BadgeText>{pendingActions.length}</BadgeText>
-                </Badge>
-              </HStack>
-              <Text color="$secondary500">
-                You have {pendingActions.length} pending{" "}
-                {pendingActions.length === 1 ? "action" : "actions"} that will
-                sync when online
-              </Text>
-              <Link href="/offline/queue" asChild>
-                <Button variant="outline" size="sm">
-                  <Text>View Queue</Text>
-                </Button>
-              </Link>
-            </VStack>
-          </Card>
-        )}
 
         {/* Recent Activity */}
         <Card>
