@@ -1,20 +1,25 @@
+export enum UserRole {
+  ADMIN = "administrator",
+  ENRO_STAFF = "enro_staff",
+  BARANGAY_OFFICIAL = "barangay_official",
+  GARBAGE_COLLECTOR = "collector",
+  RESIDENT = "resident",
+}
+
 export interface User {
   _id: string;
+  position?: {
+    lat: number;
+    lng: number;
+  };
   first_name: string;
   middle_name: string;
   last_name: string;
   gender: "male" | "female";
   contact_number: string;
   email: string;
-  role:
-    | "admin"
-    | "resident"
-    | "enro_staff_monitoring"
-    | "enro_staff_head"
-    | "enro_staff_scheduler"
-    | "enro_staff_eswm_section_head"
-    | "barangay_official"
-    | "garbage_collector";
+  role: UserRole;
+  barangay?: string;
   route?: string;
   role_action?: string;
   is_disabled: boolean;
@@ -70,8 +75,26 @@ export interface Notification {
 
 export interface PendingAction {
   id: string;
-  type: "SUBMIT_REPORT" | "UPDATE_PROFILE";
+  type: string;
   data: any;
-  timestamp: string;
-  status: "pending" | "syncing" | "failed";
+  timestamp: number;
+  retries: number;
+}
+
+export interface VerifyOTPRequest {
+  email: string;
+  otpCode: string;
+  otpType?: "verification" | "recovery";
+}
+
+export interface VerifyOTPResponse {
+  message: string;
+  token?: string;
+  user?: User;
+}
+
+export interface SignupResponse {
+  message: string;
+  email?: string;
+  requiresVerification?: boolean;
 }

@@ -6,6 +6,14 @@ interface LoginResponse {
   user: User;
 }
 
+interface SignupResponse {
+  message: string;
+  email?: string;
+  requiresVerification?: boolean;
+  user?: User;
+  token?: string;
+}
+
 interface SignupData {
   first_name: string;
   middle_name: string;
@@ -24,9 +32,22 @@ export const authService = {
     return response.data.data;
   },
 
-  async signup(userData: SignupData): Promise<LoginResponse> {
+  async signup(userData: SignupData): Promise<SignupResponse> {
     const response = await api.post("/users/add_user_resident", userData);
-    return response.data;
+
+    // Transform the response to match SignupResponse
+    const responseData = response.data;
+
+    // Return email for OTP verification instead of userId
+    return {
+      message:
+        responseData.message ||
+        "Signup successful. Please check your email for verification code.",
+      email: userData.email, // Use the email from signup data for OTP
+      requiresVerification: responseData.requiresVerification ?? true, // Default to true for OTP verification
+      user: responseData.user,
+      token: responseData.token,
+    };
   },
 
   async forgotPassword(email: string): Promise<void> {

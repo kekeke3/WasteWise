@@ -22,7 +22,7 @@ export default function RootLayout() {
               <Stack.Screen name="auth" />
             </Stack>
             {/*             <StatusBar style="auto" />
-             */}{" "}
+             */}
           </OfflineProvider>
         </AuthProvider>
       </ToastProvider>

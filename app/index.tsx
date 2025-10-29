@@ -17,7 +17,7 @@ export default function Index() {
           router.replace("/auth/login");
         } else if (user.role === "resident") {
           router.replace("/resident");
-        } else if (user.role === "garbage_collector") {
+        } else if (user.role === "collector") {
           router.replace("/collector");
         } else {
           router.replace("/auth/login");

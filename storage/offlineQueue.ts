@@ -1,35 +1,19 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { PendingAction } from '../types';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { PendingAction } from "../types";
 
-const OFFLINE_QUEUE_KEY = "offline_queue";
+const PENDING_ACTIONS_KEY = "pending_actions";
 
-export const offlineQueue = {
-  async addAction(action: PendingAction): Promise<void> {
-    const existingActions = await this.getPendingActions();
-    const updatedActions = [...existingActions, action];
-    await AsyncStorage.setItem(
-      OFFLINE_QUEUE_KEY,
-      JSON.stringify(updatedActions)
-    );
+export const offlineQueueStorage = {
+  async setPendingActions(actions: PendingAction[]): Promise<void> {
+    await AsyncStorage.setItem(PENDING_ACTIONS_KEY, JSON.stringify(actions));
   },
 
   async getPendingActions(): Promise<PendingAction[]> {
-    const actions = await AsyncStorage.getItem(OFFLINE_QUEUE_KEY);
+    const actions = await AsyncStorage.getItem(PENDING_ACTIONS_KEY);
     return actions ? JSON.parse(actions) : [];
   },
 
-  async removeAction(actionId: string): Promise<void> {
-    const existingActions = await this.getPendingActions();
-    const updatedActions = existingActions.filter(
-      (action) => action.id !== actionId
-    );
-    await AsyncStorage.setItem(
-      OFFLINE_QUEUE_KEY,
-      JSON.stringify(updatedActions)
-    );
-  },
-
-  async clearActions(): Promise<void> {
-    await AsyncStorage.removeItem(OFFLINE_QUEUE_KEY);
+  async clearPendingActions(): Promise<void> {
+    await AsyncStorage.removeItem(PENDING_ACTIONS_KEY);
   },
 };
