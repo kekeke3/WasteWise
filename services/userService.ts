@@ -3,6 +3,21 @@ import api from "./api";
 
 export const userService = {
   /**
+   * Update user verification status
+   */
+  async updateUserVerified(id: string, verified: boolean): Promise<User> {
+    try {
+      const response = await api.put(`/users/update_user_verified/${id}`, {
+        verify: verified,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error updating user verification status:", error);
+      throw error;
+    }
+  },
+
+  /**
    * Update user location
    */
   async updateUserLocation(

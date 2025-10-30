@@ -83,8 +83,8 @@ export interface PendingAction {
 
 export interface VerifyOTPRequest {
   email: string;
-  otpCode: string;
-  otpType?: "verification" | "recovery";
+  otp: string;
+  otp_type: "verification" | "recovery"; // Make this required since backend needs it
 }
 
 export interface VerifyOTPResponse {

@@ -5,21 +5,33 @@ import { View } from "react-native";
 import { useAuth } from "../context/AuthContext";
 
 export default function Index() {
-  const { user, loading } = useAuth();
-
+  const { user, loading, isAuthenticated } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     // Check if router is ready before navigating
     if (!loading) {
       const redirect = () => {
-        if (!user) {
+        console.log("Redirect check:", {
+          user: user ? `${user.first_name} (${user.role})` : "none",
+          isAuthenticated,
+          isVerified: user?.is_verified,
+        });
+
+        if (!user || !isAuthenticated || user.is_verified === false) {
+          // Redirect to login if no user, not authenticated, or not verified
+          console.log(
+            "Redirecting to login - user not authenticated or not verified"
+          );
           router.replace("/auth/login");
         } else if (user.role === "resident") {
+          console.log("Redirecting to resident dashboard");
           router.replace("/resident");
         } else if (user.role === "collector") {
+          console.log("Redirecting to collector dashboard");
           router.replace("/collector");
         } else {
+          console.log("Redirecting to login - unknown role");
           router.replace("/auth/login");
         }
       };
@@ -28,7 +40,7 @@ export default function Index() {
       const timer = setTimeout(redirect, 150);
       return () => clearTimeout(timer);
     }
-  }, [loading, user, router]);
+  }, [loading, user, isAuthenticated, router]);
 
   return (
     <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>

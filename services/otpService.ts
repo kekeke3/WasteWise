@@ -3,10 +3,13 @@ import api from "./api";
 
 export const otpService = {
   // Request OTP for verification (for signup)
-  requestOTP: async (email: string): Promise<{ message: string }> => {
+  requestOTP: async (
+    email: string,
+    otpType: "verification" | "recovery" = "verification"
+  ): Promise<{ message: string }> => {
     const response = await api.post<{ message: string }>("/otp/add_otp", {
       email,
-      otp_type: "verification", // For account verification during signup
+      otp_type: otpType,
     });
     return response.data;
   },
@@ -15,7 +18,7 @@ export const otpService = {
   requestRecoveryOTP: async (email: string): Promise<{ message: string }> => {
     const response = await api.post<{ message: string }>("/otp/add_otp", {
       email,
-      otp_type: "recovery", // For password recovery
+      otp_type: "recovery",
     });
     return response.data;
   },
@@ -26,7 +29,7 @@ export const otpService = {
   ): Promise<VerifyOTPResponse> => {
     const response = await api.post<VerifyOTPResponse>(
       "/otp/verify_otp",
-      verifyData
+      verifyData // Send the data directly since it matches the backend structure
     );
     return response.data;
   },

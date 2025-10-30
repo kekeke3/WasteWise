@@ -1,3 +1,4 @@
+import { userService } from "@/services/userService";
 import { useRouter, useSegments } from "expo-router";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { authService } from "../services/authService";
@@ -17,7 +18,7 @@ interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   signup: (userData: SignupData) => Promise<SignupResponse>;
-  verifyOTP: (userId: string, otpCode: string) => Promise<void>;
+  verifyOTP: (email: string, otpCode: string) => Promise<void>; // Return the response
   resendOTP: (userId: string) => Promise<{ message: string }>;
   updateUser: (user: User) => void;
   refreshUser: () => Promise<void>;
@@ -74,21 +75,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     if (!state.loading) {
       const inAuthGroup = segments[0] === "auth";
 
-      if (!state.user && !inAuthGroup) {
-        // Redirect to login if not authenticated and not in auth group
-        router.replace("/auth/login");
-      } else if (state.user && inAuthGroup) {
-        // Redirect to appropriate dashboard if authenticated and in auth group
-        if (state.user.role === "resident") {
-          router.replace("/resident");
-        } else if (state.user.role === "collector") {
-          router.replace("/collector");
-        } else {
-          router.replace("/resident"); // default fallback
+      if (
+        !state.user ||
+        !state.isAuthenticated ||
+        state.user.is_verified === false
+      ) {
+        // Redirect to login if not authenticated or not verified
+        if (!inAuthGroup) {
+          router.replace("/auth/login");
+        }
+      } else if (
+        state.user &&
+        state.isAuthenticated &&
+        state.user.is_verified === true
+      ) {
+        // Redirect to appropriate dashboard if authenticated and verified
+        if (inAuthGroup) {
+          if (state.user.role === "resident") {
+            router.replace("/resident");
+          } else if (state.user.role === "collector") {
+            router.replace("/collector");
+          } else {
+            router.replace("/resident");
+          }
         }
       }
     }
-  }, [state.user, state.loading, segments]);
+  }, [state.user, state.isAuthenticated, state.loading, segments]);
 
   /**
    * Check if user is authenticated by verifying stored user data
@@ -133,15 +146,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       const response = await authService.login(email, password);
       console.log("Login response:", response);
 
-      // Save user data to local storage
-      await localStorage.setUser(response.user);
+      // Check if user is verified
+      if (response.user && response.user.is_verified === false) {
+        // Save user data to localStorage but DON'T set as authenticated
+        await localStorage.setUser(response.user);
 
-      setState({
-        user: response.user,
-        token: null,
-        isAuthenticated: true,
-        loading: false,
-      });
+        // Store the user in state but mark as not authenticated
+        setState({
+          user: response.user,
+          token: null,
+          isAuthenticated: false, // Important: not authenticated
+          loading: false,
+        });
+
+        // Throw error to trigger OTP modal
+        const error: any = new Error(
+          "Account not verified. Please verify your account."
+        );
+        error.requiresVerification = true;
+        error.email = email;
+        error.userId = response.user._id;
+        throw error;
+      }
+
+      // Only set authenticated if user is verified
+      if (response.user && response.user.is_verified === true) {
+        await localStorage.setUser(response.user);
+
+        setState({
+          user: response.user,
+          token: null,
+          isAuthenticated: true, // Authenticated only when verified
+          loading: false,
+        });
+      } else {
+        throw new Error("Account verification status unknown.");
+      }
     } catch (error) {
       setState((prev) => ({ ...prev, loading: false }));
       throw error;
@@ -171,44 +211,101 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   /**
+   * Update user verification status after successful OTP verification
+   */
+  const updateUserVerified = async (userId: string): Promise<void> => {
+    try {
+      // Fetch updated user data from the server using user ID
+      const updatedUser = await userService.updateUserVerified(userId, true);
+
+      if (updatedUser) {
+        // Update both context state and local storage
+        await localStorage.setUser(updatedUser);
+
+        setState((prevState) => ({
+          ...prevState,
+          user: updatedUser,
+          isAuthenticated: true,
+        }));
+
+        console.log(
+          "User verification status updated:",
+          updatedUser.is_verified
+        );
+      }
+    } catch (error) {
+      console.error("Failed to update user verification status:", error);
+      throw error;
+    }
+  };
+
+  /**
    * Verify OTP code for account activation
    */
-  const verifyOTP = async (email: string, otpCode: string): Promise<void> => {
+
+  const verifyOTP = async (
+    email: string,
+    otpCode: string,
+    userId?: string
+  ): Promise<void> => {
     try {
       setState((prev) => ({ ...prev, loading: true }));
 
-      const response: VerifyOTPResponse = await otpService.verifyOTP({
+      console.log("Starting OTP verification for:", { email, otpCode, userId });
+
+      // Verify OTP with the server
+      const response = await otpService.verifyOTP({
         email,
-        otpCode,
-        otpType: "verification",
+        otp: otpCode,
+        otp_type: "verification",
       });
 
-      if (response.token && response.user) {
-        // Store token and user data
-        await localStorage.setUser(response.user);
-        /*         await localStorage.setItem("authToken", response.token);
-         */
-        setState({
-          user: response.user,
-          token: response.token,
-          isAuthenticated: true,
-          loading: false,
-        });
+      console.log("OTP Verification Response:", response);
 
-        // Redirect based on role after successful verification
-        if (response.user.role === "resident") {
-          router.replace("/resident");
-        } else if (response.user.role === "collector") {
-          router.replace("/collector");
-        } else {
-          router.replace("/resident");
+      // If OTP verification is successful, update user verification status
+      if (
+        response.message &&
+        response.message.includes("OTP verified successfully")
+      ) {
+        console.log("OTP verified successfully, updating user status...");
+
+        // Get current user data
+        let currentUser = state.user;
+        if (!currentUser) {
+          currentUser = await localStorage.getUser();
         }
-      } else {
-        throw new Error(response.message || "Verification failed");
+
+        // Update user verification status
+        if (currentUser) {
+          const updatedUser = {
+            ...currentUser,
+            is_verified: true,
+            verified_at: new Date().toISOString(),
+          };
+
+          // Save updated user to localStorage
+          await localStorage.setUser(updatedUser);
+
+          // Update state and mark as authenticated
+          setState((prevState) => ({
+            ...prevState,
+            user: updatedUser,
+            isAuthenticated: true, // Now mark as authenticated
+          }));
+
+          console.log(
+            "User verification status updated successfully, user is now authenticated"
+          );
+        } else {
+          console.warn("No user data found to update");
+        }
       }
-    } catch (error) {
+    } catch (error: any) {
+      console.error("OTP Verification Error:", error);
       setState((prev) => ({ ...prev, loading: false }));
       throw error;
+    } finally {
+      setState((prev) => ({ ...prev, loading: false }));
     }
   };
   /**
