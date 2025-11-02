@@ -1,24 +1,20 @@
 import { Box, Image } from "@gluestack-ui/themed";
 import { useRouter } from "expo-router";
-import React, { useEffect } from "react";
+import React, { useEffect, useContext } from "react";
 import { View } from "react-native";
-import { useAuth } from "../context/AuthContext";
+
+import { AuthContext } from "@/context/AuthContext";   
 
 export default function Index() {
-  const { user, loading, isAuthenticated } = useAuth();
+  const { user, loading } = useContext(AuthContext)!; 
+
   const router = useRouter();
 
   useEffect(() => {
     // Check if router is ready before navigating
     if (!loading) {
       const redirect = () => {
-        console.log("Redirect check:", {
-          user: user ? `${user.first_name} (${user.role})` : "none",
-          isAuthenticated,
-          isVerified: user?.is_verified,
-        });
-
-        if (!user || !isAuthenticated || user.is_verified === false) {
+        if (!user || user.is_verified === false) {
           // Redirect to login if no user, not authenticated, or not verified
           console.log(
             "Redirecting to login - user not authenticated or not verified"
@@ -40,7 +36,7 @@ export default function Index() {
       const timer = setTimeout(redirect, 150);
       return () => clearTimeout(timer);
     }
-  }, [loading, user, isAuthenticated, router]);
+  }, [loading, user, router]);
 
   return (
     <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>

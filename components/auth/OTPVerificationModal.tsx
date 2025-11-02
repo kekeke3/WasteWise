@@ -1,5 +1,3 @@
-import { useAuth } from "@/context/AuthContext";
-import { otpService } from "@/services/otpService"; // Import the OTP service
 import {
   Button,
   Heading,
@@ -16,8 +14,14 @@ import {
   useToast,
   VStack,
 } from "@gluestack-ui/themed";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useContext  } from "react";
 import { AppToast } from "../ui/AppToast";
+
+import { verifyOTP, verifyUser, createOTP } from "../../hooks/otp_hook";
+
+import { useRouter } from "expo-router";
+
+import { AuthContext } from "../../context/AuthContext";
 
 interface OTPVerificationModalProps {
   isVisible: boolean;
@@ -39,32 +43,38 @@ export const OTPVerificationModal: React.FC<OTPVerificationModalProps> = ({
   const [initialRequestSent, setInitialRequestSent] = useState<boolean>(false);
   const inputRefs = useRef<any[]>([]);
   const toast = useToast();
-  const { verifyOTP, resendOTP } = useAuth();
-
+  const router = useRouter();
+  const { user } = useContext(AuthContext)!;
+  
   useEffect(() => {
-    if (isVisible && email && !initialRequestSent) {
-      // Automatically send OTP when modal opens for the first time
+    if(isVisible === true) {
       sendInitialOTP();
     }
-  }, [isVisible, email, initialRequestSent]);
+  }, [isVisible]);
 
   const sendInitialOTP = async () => {
     try {
       setResendLoading(true);
-      await otpService.requestOTP(email, "verification"); // Pass otp_type
-      setInitialRequestSent(true);
-      startCountdown();
-      toast.show({
-        placement: "top right",
-        render: ({ id }) => (
-          <AppToast
-            id={id}
-            type="success"
-            title="OTP Sent"
-            description="Verification code has been sent to your email"
-          />
-        ),
+      const { success } = await createOTP({
+        email,
+        otp_type: "verification",
       });
+      
+      if(success === true) {
+        setInitialRequestSent(true);
+        startCountdown();
+        toast.show({
+          placement: "top right",
+          render: ({ id }) => (
+            <AppToast
+              id={id}
+              type="success"
+              title="OTP Sent"
+              description="Verification code has been sent to your email"
+            />
+          ),
+        });
+      }
     } catch (error: any) {
       toast.show({
         placement: "top right",
@@ -90,19 +100,25 @@ export const OTPVerificationModal: React.FC<OTPVerificationModalProps> = ({
 
     setResendLoading(true);
     try {
-      await otpService.requestOTP(email, "verification"); // Pass otp_type
-      toast.show({
-        placement: "top right",
-        render: ({ id }) => (
-          <AppToast
-            id={id}
-            type="success"
-            title="OTP Resent"
-            description="A new verification code has been sent to your email"
-          />
-        ),
+      const { success } = await createOTP({
+        email,
+        otp_type: "verification",
       });
-      startCountdown();
+
+      if(success === true) {
+        toast.show({
+          placement: "top right",
+          render: ({ id }) => (
+            <AppToast
+              id={id}
+              type="success"
+              title="OTP Resent"
+              description="A new verification code has been sent to your email"
+            />
+          ),
+        });
+        startCountdown();
+      }
     } catch (error: any) {
       toast.show({
         placement: "top right",
@@ -177,73 +193,55 @@ export const OTPVerificationModal: React.FC<OTPVerificationModalProps> = ({
     }
 
     setLoading(true);
-    console.log("Sending OTP verification with:", {
-      email: email,
-      otp: otpCode,
-      otp_type: "verification",
-    });
 
     try {
-      const response = await verifyOTP(email, otpCode);
-      console.log("OTP Verification Success:", response);
+      // const response = await verifyOTP(email, otpCode);
+      const { data, success } = await verifyOTP({
+        email,
+        otp: otpCode,
+        otp_type: "verification",
+      });
 
+ 
+      if (success === true) {
+        const { success } = await verifyUser(user?._id, {
+          verify: true
+        });
+
+
+
+        if (success === true) {
+          onVerifySuccess();
+          onClose();
+          if(user) {
+            router.replace("/resident");
+            return;
+          }
+          
+          router.replace("/auth/login");
+        }
+      }
+    } catch (error: any) {
+      console.log("OTP Verification Error Details:", error);
       toast.show({
         placement: "top right",
         render: ({ id }) => (
           <AppToast
             id={id}
-            type="success"
-            title="Verification Successful"
-            description="Your account has been verified successfully!"
+            type="error"
+            title="Verification Failed"
+            description={
+              error?.response?.data?.message ||
+              error.message ||
+              "Invalid OTP code"
+            }
           />
         ),
       });
-      onVerifySuccess();
-      onClose();
-    } catch (error: any) {
-      console.log("OTP Verification Error Details:", error);
-
-      // Check if it's actually a success message
-      if (
-        error.message &&
-        error.message.includes("OTP verified successfully")
-      ) {
-        // This is actually success - show success message
-        toast.show({
-          placement: "top right",
-          render: ({ id }) => (
-            <AppToast
-              id={id}
-              type="success"
-              title="Verification Successful"
-              description="Your account has been verified successfully!"
-            />
-          ),
-        });
-        onVerifySuccess();
-        onClose();
-      } else {
-        // Real error
-        toast.show({
-          placement: "top right",
-          render: ({ id }) => (
-            <AppToast
-              id={id}
-              type="error"
-              title="Verification Failed"
-              description={
-                error?.response?.data?.message ||
-                error.message ||
-                "Invalid OTP code"
-              }
-            />
-          ),
-        });
-        // Clear OTP on failure
-        setOtp(["", "", "", "", "", ""]);
-        if (inputRefs.current[0]) {
-          inputRefs.current[0].focus();
-        }
+      // Clear OTP on failure
+      setOtp(["", "", "", "", "", ""]);
+      if (inputRefs.current[0]) {
+        inputRefs.current[0].focus();
       }
     } finally {
       setLoading(false);

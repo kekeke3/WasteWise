@@ -1,5 +1,5 @@
 import { LocationModal } from "@/components/LocationModal";
-import { useAuth } from "@/context/AuthContext";
+// import { useAuth } from "@/context/AuthContext";
 import { userService } from "@/services/userService";
 import { User } from "@/types";
 import { config } from "@gluestack-ui/config";
@@ -9,59 +9,37 @@ import {
   Calendar,
   Flag,
   History,
+  MapPin,
   Home,
   Settings as SettingsIcon,
 } from "lucide-react-native";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext  } from "react";
+import { AuthContext } from "@/context/AuthContext"; // Import the correct context
+
 
 export default function ResidentLayout() {
-  const { user, updateUser } = useAuth();
-  const [showLocationModal, setShowLocationModal] = useState(false);
-
-  useEffect(() => {
-    // Check if user has location set
-    if (user && (!user.position?.lat || !user.position?.lng)) {
-      // Show modal after a short delay to let the app load
-      const timer = setTimeout(() => {
-        setShowLocationModal(true);
-      }, 1000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [user]);
-
-  const handleLocationSet = async (location: { lat: number; lng: number }) => {
-    try {
-      if (user) {
-        // Update user location in backend
-        await userService.updateUserLocation(user._id, {
-          latitude: location.lat,
-          longitude: location.lng,
-        });
-
-        // Update local user state
-        const updatedUser: User = {
-          ...user,
-          position: location,
-        };
-        updateUser(updatedUser);
-      }
-    } catch (error) {
-      console.error("Error updating user location:", error);
-    }
-  };
-
-  const handleCloseModal = () => {
-    setShowLocationModal(false);
-  };
+  // const { user, updateUser } = useAuth();
+  const { user } = useContext(AuthContext)!;
 
   return (
     <GluestackUIProvider config={config}>
       <Tabs
         screenOptions={{
-          headerShown: false,
+          headerShown: true,
+          headerStyle: {
+            backgroundColor: "#007BFF",
+          },
+          headerTintColor: "#ffffff",
+          headerTitleStyle: {
+            fontWeight: "bold",
+          },
           tabBarStyle: {
             backgroundColor: "#ffffff",
+            height: 120, // 👈 increase or decrease this value as needed
+            paddingBottom: 5, // optional: adjust icon/text spacing
+            paddingTop: 5, // optional: adjust vertical spacing
+            borderTopWidth: 0.5,
+            borderTopColor: "#ddd",
           },
           tabBarActiveTintColor: "#007BFF",
           tabBarInactiveTintColor: "#999999",
@@ -85,30 +63,21 @@ export default function ResidentLayout() {
           }}
         />
 
-        {/*      <Tabs.Screen
-          name="track-collectors"
-          options={{
-            title: "Track",
-            tabBarIcon: ({ color, size }) => (
-              <MapPin color={color} size={size} />
-            ),
-          }}
-        /> */}
-
         <Tabs.Screen
           name="report"
           options={{
             title: "Report",
-            tabBarIcon: ({ color, size }) => <Flag color={color} size={size} />,
-          }}
-        />
-
-        <Tabs.Screen
-          name="history"
-          options={{
-            title: "History",
             tabBarIcon: ({ color, size }) => (
               <History color={color} size={size} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="track_collectors"
+          options={{
+            title: "Track",
+            tabBarIcon: ({ color, size }) => (
+              <MapPin color={color} size={size} />
             ),
           }}
         />
@@ -123,12 +92,6 @@ export default function ResidentLayout() {
           }}
         />
       </Tabs>
-
-      <LocationModal
-        visible={showLocationModal}
-        onClose={handleCloseModal}
-        onLocationSet={handleLocationSet}
-      />
     </GluestackUIProvider>
   );
 }

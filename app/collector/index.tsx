@@ -1,22 +1,22 @@
 import {
-    Badge,
-    BadgeText,
-    Box,
-    Button,
-    ButtonText,
-    Card,
-    HStack,
-    Progress,
-    ProgressFilledTrack,
-    ScrollView,
-    Text,
-    VStack,
+  Badge,
+  BadgeText,
+  Box,
+  Button,
+  ButtonText,
+  Card,
+  HStack,
+  Progress,
+  ProgressFilledTrack,
+  ScrollView,
+  Text,
+  VStack,
 } from "@gluestack-ui/themed";
 import { Link } from "expo-router";
 import { AlertTriangle, CheckCircle, Clock, MapPin } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import { Loader } from "../../components/ui/Loader";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/AuthContextOrig";
 import { useLocation } from "../../hooks/useLocation";
 
 interface CollectorStats {

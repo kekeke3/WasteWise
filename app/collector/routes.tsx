@@ -1,22 +1,22 @@
 import {
-    Badge,
-    BadgeText,
-    Box,
-    Button,
-    ButtonText,
-    Card,
-    Checkbox,
-    CheckboxIcon,
-    CheckboxIndicator,
-    HStack,
-    ScrollView,
-    Text,
-    VStack,
+  Badge,
+  BadgeText,
+  Box,
+  Button,
+  ButtonText,
+  Card,
+  Checkbox,
+  CheckboxIcon,
+  CheckboxIndicator,
+  HStack,
+  ScrollView,
+  Text,
+  VStack,
 } from "@gluestack-ui/themed";
 import { Check, MapPin, Navigation } from "lucide-react-native";
 import React, { useState } from "react";
 import MapView, { Marker, Polyline } from "react-native-maps";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/AuthContextOrig";
 
 interface CollectionArea {
   id: string;

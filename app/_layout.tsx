@@ -3,7 +3,7 @@ import "react-native-reanimated";
 
 import { AuthProvider } from "@/context/AuthContext";
 import { OfflineProvider } from "@/context/OfflineContext";
-import { customConfig } from "@/📄 gluestack-ui.config";
+import { customConfig } from "@/gluestack-ui.config";
 import { GluestackUIProvider } from "@gluestack-ui/themed";
 import { ToastProvider } from "@gluestack-ui/toast";
 

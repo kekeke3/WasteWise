@@ -23,39 +23,82 @@ import {
   Shield,
   User,
 } from "lucide-react-native";
-import React, { useState } from "react";
-import { LocationModal } from "../../components/LocationModal";
-import { useAuth } from "../../context/AuthContext";
-import { useOffline } from "../../context/OfflineContext";
+import { LocationModalOrmoc } from "../../../components/LocationModalOrmoc";
+import { useOffline } from "../../../context/OfflineContext";
+
+import  React, { useEffect, useState, useContext } from "react";
+import { AuthContext } from "@/context/AuthContext"; // Import the correct context
+import { useFocusEffect } from "@react-navigation/native";
+import { Link, useRouter } from "expo-router";
+
+import {
+  getAllGarbageSiteSpecificBarangay,
+  changeUserResidentGarbageSite,
+} from "../../../hooks/settings_hook";
+
+
+interface GarbageSite {
+  _id: string;
+  garbage_site_name: string;
+  barangay: string;
+  position: {
+    lat: number;
+    lng: number;
+  };
+  created_at: string;
+  __v: number;
+}
 
 export default function Settings() {
-  const { user, logout, updateUser } = useAuth();
+  const { user, logout } = useContext(AuthContext)!;
   const { isOnline } = useOffline();
   const [showLogoutAlert, setShowLogoutAlert] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [updatingLocation, setUpdatingLocation] = useState(false);
+  const [garbages, setGarbageSites] = useState<GarbageSite[]>([]);
 
   const handleLogout = async () => {
     setShowLogoutAlert(false);
     await logout();
   };
 
-  const handleLocationSet = async (location: { lat: number; lng: number }) => {
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchGarbageSites();
+    }, [])
+  );
+
+  // useEffect(() => {
+  //   if (showLocationModal && user?.barangay?.barangay_name) {
+  //     fetchGarbageSites();
+  //   }
+  // }, [showLocationModal, user?.barangay?.barangay_name]);
+  
+  const fetchGarbageSites = async () => {
+    try {
+      const { data, success } = await getAllGarbageSiteSpecificBarangay(user?.barangay?._id);
+      if (success) {
+        // Store the garbage sites data in state to pass to the modal
+        setGarbageSites(data.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching garbage sites:", error);
+    }
+  };
+
+  const handleLocationSet = async (site_id: string) => {
     try {
       setUpdatingLocation(true);
-
       if (user) {
-        // Update user location in backend
-        await userService.updateUserLocation(user._id, {
-          latitude: location.lat,
-          longitude: location.lng,
+        // Update user's garbage site
+        const response = await changeUserResidentGarbageSite(user?._id, {
+          garbage_site: site_id,
         });
-        // Update local user state
-        const updatedUser = {
-          ...user,
-          position: location,
-        };
-        updateUser(updatedUser);
+
+        if (response.success === true) {
+          console.log("Garbage site updated successfully");
+          // You might want to refresh user data or show a success message
+        }
       }
     } catch (error) {
       console.error("Error updating location:", error);
@@ -66,7 +109,7 @@ export default function Settings() {
   };
 
   const getLocationStatus = () => {
-    if (!user?.position?.lat || !user?.position?.lng) {
+    if (!user?.garbage_site?.position?.lat || !user?.garbage_site?.position?.lng) {
       return { status: "Not Set", color: "$red500", bg: "$red50" };
     }
     return { status: "Set", color: "$success500", bg: "$success50" };
@@ -108,7 +151,7 @@ export default function Settings() {
                   {user?.first_name} {user?.last_name}
                 </Text>
                 <Text color="$secondary500" size="sm">
-                  Barangay {user?.barangay}
+                  Barangay {user?.barangay?.barangay_name}
                 </Text>
                 <Text color="$secondary500" size="sm">
                   {user?.email}
@@ -146,6 +189,7 @@ export default function Settings() {
                 ACCOUNT
               </Text>
               <VStack space="xs">
+              <Link href="/resident/settings/update_profile" asChild>
                 <Button
                   variant="outline"
                   justifyContent="flex-start"
@@ -156,7 +200,7 @@ export default function Settings() {
                     <Text>Edit Profile</Text>
                   </HStack>
                 </Button>
-
+                </Link>
                 <Button
                   variant="outline"
                   justifyContent="flex-start"
@@ -296,11 +340,18 @@ export default function Settings() {
       </ScrollView>
 
       {/* Location Modal */}
-      <LocationModal
+      <LocationModalOrmoc
         visible={showLocationModal}
         onClose={() => setShowLocationModal(false)}
         onLocationSet={handleLocationSet}
+        garbageSites={garbages || []} // Pass the garbage sites data
       />
+
+      {/* <LocationModalOrmoc
+        visible={showLocationModal}
+        onClose={() => setShowLocationModal(false)}
+        onLocationSet={handleLocationSet}
+      /> */}
 
       {/* Logout Confirmation Dialog */}
       <AlertDialog
