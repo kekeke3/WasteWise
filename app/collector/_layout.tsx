@@ -11,16 +11,28 @@ export default function CollectorLayout() {
   return (
     <Tabs
       screenOptions={{
-        headerShown: false,
+        headerShown: true,
+        headerStyle: {
+          backgroundColor: "#007BFF",
+        },
+        headerTintColor: "#ffffff",
+        headerTitleStyle: {
+          fontWeight: "bold",
+        },
         tabBarStyle: {
           backgroundColor: "#ffffff",
+          height: 120, // 👈 increase or decrease this value as needed
+          paddingBottom: 5, // optional: adjust icon/text spacing
+          paddingTop: 5, // optional: adjust vertical spacing
+          borderTopWidth: 0.5,
+          borderTopColor: "#ddd",
         },
-        tabBarActiveTintColor: "#10B981",
+        tabBarActiveTintColor: "#007BFF",
         tabBarInactiveTintColor: "#999999",
       }}
     >
       <Tabs.Screen
-        name="index"
+        name="collector-index"
         options={{
           title: "Dashboard",
           tabBarIcon: ({ color, size }) => <Home color={color} size={size} />,
@@ -28,7 +40,7 @@ export default function CollectorLayout() {
       />
 
       <Tabs.Screen
-        name="routes"
+        name="collector-routes"
         options={{
           title: "Routes",
           tabBarIcon: ({ color, size }) => <MapPin color={color} size={size} />,
@@ -36,7 +48,7 @@ export default function CollectorLayout() {
       />
 
       <Tabs.Screen
-        name="attendance"
+        name="collector-attendance"
         options={{
           title: "Attendance",
           tabBarIcon: ({ color, size }) => <Clock color={color} size={size} />,
@@ -44,23 +56,23 @@ export default function CollectorLayout() {
       />
 
       <Tabs.Screen
-        name="report"
+        name="collector-schedule"
+        options={{
+          title: "Schedule",
+          tabBarIcon: ({ color, size }) => <Flag color={color} size={size} />,
+        }}
+      />
+
+      <Tabs.Screen
+        name="collector-report"
         options={{
           title: "Report",
           tabBarIcon: ({ color, size }) => <Flag color={color} size={size} />,
         }}
       />
 
-      {/*       <Tabs.Screen
-        name="notifications"
-        options={{
-          title: "Notifications",
-          tabBarIcon: ({ color, size }) => <Bell color={color} size={size} />,
-        }}
-      /> */}
-
       <Tabs.Screen
-        name="settings"
+        name="collector-settings"
         options={{
           title: "Settings",
           tabBarIcon: ({ color, size }) => (
@@ -68,6 +80,20 @@ export default function CollectorLayout() {
           ),
         }}
       />
+
+      {/* <Tabs.Screen
+        name="report"
+        options={{
+          href: null, // This hides it from the tab bar
+        }}
+      />
+
+      <Tabs.Screen
+        name="settings"
+        options={{
+          href: null, // This hides it from the tab bar
+        }}
+      /> */}
     </Tabs>
   );
 }

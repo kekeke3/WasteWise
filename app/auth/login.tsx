@@ -16,6 +16,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   TouchableWithoutFeedback,
+  Dimensions
 } from "react-native";
 
 import { OTPVerificationModal } from "../../components/auth/OTPVerificationModal";
@@ -39,6 +40,37 @@ export default function Login() {
   const toast = useToast();
   const router = useRouter();
 
+  const getDeviceInfo = () => {
+    const { width } = Dimensions.get('window');
+    
+    const isTablet = width >= 768;
+    const isDesktop = width >= 1024;
+    
+    let deviceType = 'mobile';
+    if (isDesktop) deviceType = 'desktop';
+    else if (isTablet) deviceType = 'tablet';
+
+    let platformName: string = Platform.OS;
+    if (Platform.OS === 'ios') {
+      platformName = 'iOS';
+    } else if (Platform.OS === 'android') {
+      platformName = 'Android';
+    } else if (Platform.OS === 'windows') {
+      platformName = 'Windows';
+    } else if (Platform.OS === 'macos') {
+      platformName = 'macOS';
+    } else if (Platform.OS === 'web') {
+      platformName = 'Web';
+    }
+
+    return {
+      os: `${platformName} ${Platform.Version}`,
+      device: deviceType,
+      platform: platformName,
+      // deviceName: `${platformName} Device`,
+    };
+  };
+
 
   const handleLogin = async (): Promise<void> => {
     if (!email || !password) {
@@ -59,8 +91,9 @@ export default function Login() {
 
     setLoading(true);
     try {
+      const deviceInfo = getDeviceInfo();
       const { data, success } = await loginUser({ email, password });
-
+  
       if (success === true) {
         if (data.data.user.is_verified === false) {
           setPendingEmail(data.data.user.email);
@@ -68,11 +101,18 @@ export default function Login() {
           return;
         }
 
-        router.replace("/resident");
-        await login(data.data.user, data.data.logged_in_at);
-        return;
+        if (data.data.user.role === "resident") {
+          router.replace("/resident/resident-index");
+          await login(data.data.user, data.data.logged_in_at);
+          return;
+        }
+
+        if (data.data.user.role === "garbage_collector") {
+          router.replace("/collector/collector-index");
+          await login(data.data.user, data.data.logged_in_at);
+          return;
+        }
       }
-      // If login is successful, the user will be redirected automatically
     } catch (error: any) {
       toast.show({
         placement: "top right",

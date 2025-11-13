@@ -14,7 +14,7 @@ interface ReportFormData {
   report_type: 'uncollected' | 'overflowing' | 'illegal_dumping' | 'missed_route' | 'other';
 }
 
-export default function ReportScreen() {
+export default function ResidentCreateReportScreen() {
   const { user } = useContext(AuthContext)!;
   const { addPendingAction, isOnline } = useOffline();
   const router = useRouter();
@@ -50,7 +50,7 @@ export default function ReportScreen() {
 
         if (response.success) {
           alert('Report submitted successfully!');
-          router.push("/resident/report");
+          router.push("/resident/resident-index");
         }
       } else {
         // Add to offline queue

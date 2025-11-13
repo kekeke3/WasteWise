@@ -2,7 +2,7 @@ import { Stack } from "expo-router";
 import { GluestackUIProvider } from "@gluestack-ui/themed";
 import { config } from "@gluestack-ui/config";
 
-export default function HistoryLayout() {
+export default function ResidentReportLayout() {
   return (
     <GluestackUIProvider config={config}>
       <Stack
@@ -18,13 +18,13 @@ export default function HistoryLayout() {
         }}
       >
         <Stack.Screen
-          name="index"
+          name="resident-index"
           options={{
             title: "History",
           }}
         />
         <Stack.Screen
-          name="create_report"
+          name="resident-create_report"
           options={{
             title: "Report",
           }}

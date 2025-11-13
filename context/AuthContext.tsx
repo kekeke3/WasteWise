@@ -90,10 +90,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const userData = decryptData(userEnc);
       const dateStr = decryptData(timeEnc);
 
-      console.log('test')
-      console.log(userData)
-      console.log('test')
-
       const loginDate = parseCustomDate(dateStr);
       if (!userData || !loginDate) return logout();
 

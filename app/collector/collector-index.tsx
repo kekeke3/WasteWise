@@ -6,15 +6,17 @@ import {
   Card,
   HStack,
   ScrollView,
-  Text,
+  Text as GSText, // 👈 rename Gluestack's Text to avoid conflict
   useToast,
   VStack,
   Progress,
   ProgressFilledTrack,
 } from "@gluestack-ui/themed";
+import { View, Text } from "react-native"; // ✅ pure React Native primitives
+
 import { Link, useRouter } from "expo-router";
-import React, { useEffect, useState, useContext } from "react";
-import MapView, { Marker } from "react-native-maps";
+import React, { useEffect, useState, useContext, useRef } from "react";
+import MapView, { Marker, Callout } from "react-native-maps";
 import { useOffline } from "../../context/OfflineContext";
 import {
   mockUser,
@@ -35,15 +37,20 @@ import {
   AlertCircle,
 } from "lucide-react-native";
 import { useFocusEffect } from "@react-navigation/native";
-import { getAllDataDashboard } from "../../hooks/dashboard_hook";
+import { getAllDataDashboardCollector } from "../../hooks/dashboard_hook";
 
 import { AppToast } from "@/components/ui/AppToast";
 
-export default function ResidentDashboard() {
-  const { user } = useContext(AuthContext)!;
+export interface ScheduleData {
+  _id: string;
+  [key: string]: any;
+}
+export default function CollectorDashboard() {
+  const { user, refresh } = useContext(AuthContext)!;
   const { isOnline } = useOffline();
   const router = useRouter();
   const toast = useToast();
+  const [schedules, setSchedules] = useState<ScheduleData[]>([]);
 
   // Use static data instead of API call
   const collectors = staticCollectors;
@@ -63,12 +70,15 @@ export default function ResidentDashboard() {
   useFocusEffect(
     React.useCallback(() => {
       fetchGarbageReports();
+      // refresh();
     }, [])
   );
 
+
   const fetchGarbageReports = async () => {
     try {
-      const { data, success } = await getAllDataDashboard(user?._id || "", user?.barangay?._id || "");
+      const { data, success } = await getAllDataDashboardCollector(user?._id || "");
+ 
       if (success === true) {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -91,12 +101,17 @@ export default function ResidentDashboard() {
           }
         );
 
-        const onRouteTrucksCount = data?.schedules?.data.filter((schedule: any) => {
-          const scheduleDate = new Date(schedule.scheduled_collection);
-          scheduleDate.setHours(0, 0, 0, 0);
-        
-          return scheduleDate.getTime() === today.getTime() && schedule.truck?.status === "On Route";
-        });
+        const onRouteTrucksCount = data?.schedules?.data.filter(
+          (schedule: any) => {
+            const scheduleDate = new Date(schedule.scheduled_collection);
+            scheduleDate.setHours(0, 0, 0, 0);
+
+            return (
+              scheduleDate.getTime() === today.getTime() &&
+              schedule.truck?.status === "On Route"
+            );
+          }
+        );
 
         setDashboardStats((prevStats) => ({
           ...prevStats,
@@ -106,8 +121,27 @@ export default function ResidentDashboard() {
           todaySchedules: todaySchedulesData.length,
           activeCollectors: onRouteTrucksCount.length,
         }));
+
+        const onRouteTrucks = data.schedules.data.filter((schedule: any) => {
+          const scheduleDate = new Date(schedule.scheduled_collection);
+          scheduleDate.setHours(0, 0, 0, 0);
+
+          return (
+            scheduleDate.getTime() === today.getTime() &&
+            schedule.truck?.status === "On Route" &&
+            schedule.route.merge_barangay.some(
+              (barangay: any) =>
+                barangay.barangay_id.toString() === user?.barangay?._id
+            )
+          );
+        });
+
+        const list = user?.role !== "resident" ? data.schedules.data : onRouteTrucks;
+
+        setSchedules(list);
       }
     } catch (error) {
+      console.log(error)
       toast.show({
         placement: "top right",
         render: ({ id }) => (
@@ -122,6 +156,16 @@ export default function ResidentDashboard() {
     }
   };
 
+  // Helper function to capitalize each word
+const capitalizeName = (name?: string) => {
+  if (!name) return "";
+  return name
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+};
+
+
   return (
     <ScrollView flex={1} bg="$white">
       <VStack space="lg" p="$4">
@@ -129,22 +173,22 @@ export default function ResidentDashboard() {
         <Card bg="$primary50" p="$4" borderColor="$primary200">
           <HStack justifyContent="space-between" alignItems="flex-start">
             <VStack space="xs" flex={1}>
-              <Text size="2xl" fontWeight="$bold" color="$primary900">
-                Welcome back, {user?.first_name}!
-              </Text>
-              <Text color="$primary700" size="sm">
+              <GSText size="2xl" fontWeight="$bold" color="$primary900">
+                Welcome back, {capitalizeName(user?.first_name)}!
+              </GSText>
+              <GSText color="$primary700" size="sm">
                 {user?.barangay?.barangay_name} •{" "}
                 {user?.role
                   ?.replace("_", " ")
                   .replace(/\b\w/g, (l) => l.toUpperCase())}
-              </Text>
+              </GSText>
 
               {!isOnline && (
                 <HStack space="sm" alignItems="center" mt="$2">
                   <AlertTriangle size={16} color="#DC2626" />
-                  <Text color="$error600" size="sm" fontWeight="$medium">
+                  <GSText color="$error600" size="sm" fontWeight="$medium">
                     Offline Mode - Limited functionality
-                  </Text>
+                  </GSText>
                 </HStack>
               )}
             </VStack>
@@ -157,9 +201,9 @@ export default function ResidentDashboard() {
 
         {/* Stats Overview */}
         <VStack space="md">
-          <Text size="lg" fontWeight="$bold" color="$secondary800">
+          <GSText size="lg" fontWeight="$bold" color="$secondary800">
             Overview
-          </Text>
+          </GSText>
 
           <HStack space="md" flexWrap="wrap">
             <Card
@@ -173,12 +217,12 @@ export default function ResidentDashboard() {
                 <Box bg="$purple100" p="$2" rounded="$full">
                   <Calendar size={20} color="#7C3AED" />
                 </Box>
-                <Text fontWeight="$bold" color="$purple900" size="xl">
+                <GSText fontWeight="$bold" color="$purple900" size="xl">
                   {dashboardStats.totalSchedules}
-                </Text>
-                <Text color="$purple700" size="sm" textAlign="center">
+                </GSText>
+                <GSText color="$purple700" size="sm" textAlign="center">
                   Total Schedules
-                </Text>
+                </GSText>
               </VStack>
             </Card>
 
@@ -193,12 +237,12 @@ export default function ResidentDashboard() {
                 <Box bg="$blue100" p="$2" rounded="$full">
                   <Flag size={20} color="#1E40AF" />
                 </Box>
-                <Text fontWeight="$bold" color="$blue900" size="xl">
+                <GSText fontWeight="$bold" color="$blue900" size="xl">
                   {dashboardStats.totalReports}
-                </Text>
-                <Text color="$blue700" size="sm" textAlign="center">
+                </GSText>
+                <GSText color="$blue700" size="sm" textAlign="center">
                   Total Reports
-                </Text>
+                </GSText>
               </VStack>
             </Card>
 
@@ -214,12 +258,12 @@ export default function ResidentDashboard() {
                 <Box bg="$green100" p="$2" rounded="$full">
                   <Calendar size={20} color="#059669" />
                 </Box>
-                <Text fontWeight="$bold" color="$green900" size="xl">
+                <GSText fontWeight="$bold" color="$green900" size="xl">
                   {dashboardStats.upcomingSchedules}
-                </Text>
-                <Text color="$green700" size="sm" textAlign="center">
+                </GSText>
+                <GSText color="$green700" size="sm" textAlign="center">
                   Upcoming Schedules
-                </Text>
+                </GSText>
               </VStack>
             </Card>
 
@@ -234,12 +278,12 @@ export default function ResidentDashboard() {
                 <Box bg="$green100" p="$2" rounded="$full">
                   <Calendar size={20} color="#059669" />
                 </Box>
-                <Text fontWeight="$bold" color="$green900" size="xl">
+                <GSText fontWeight="$bold" color="$green900" size="xl">
                   {dashboardStats.todaySchedules}
-                </Text>
-                <Text color="$green700" size="sm" textAlign="center">
+                </GSText>
+                <GSText color="$green700" size="sm" textAlign="center">
                   Today Schedules
-                </Text>
+                </GSText>
               </VStack>
             </Card>
           </HStack>
@@ -257,12 +301,12 @@ export default function ResidentDashboard() {
                 <Box bg="$orange100" p="$2" rounded="$full">
                   <Truck size={20} color="#EA580C" />
                 </Box>
-                <Text fontWeight="$bold" color="$orange900" size="xl">
+                <GSText fontWeight="$bold" color="$orange900" size="xl">
                   {dashboardStats.activeCollectors}
-                </Text>
-                <Text color="$orange700" size="sm" textAlign="center">
+                </GSText>
+                <GSText color="$orange700" size="sm" textAlign="center">
                   Active Now
-                </Text>
+                </GSText>
               </VStack>
             </Card>
 
@@ -293,21 +337,22 @@ export default function ResidentDashboard() {
         <Card p="$4" borderColor="$primary200">
           <HStack justifyContent="space-between" alignItems="center" mb="$4">
             <VStack space="xs">
-              <Text size="lg" fontWeight="$bold" color="$secondary800">
+              <GSText size="lg" fontWeight="$bold" color="$secondary800">
                 Live Collector Tracking
-              </Text>
-              <Text color="$secondary500" size="sm">
+              </GSText>
+              <GSText color="$secondary500" size="sm">
                 Real-time garbage truck locations
-              </Text>
+              </GSText>
             </VStack>
-            <Link href="/resident/track_collectors" asChild>
+            {/* <Link href="/resident/track_collectors" asChild> */}
+            <Link href="/" asChild>
               <Button size="sm" variant="link">
-                <Text color="$primary600">View All</Text>
+                <GSText color="$primary600">View All</GSText>
               </Button>
             </Link>
           </HStack>
 
-          <Box h={200} borderRadius="$lg" overflow="hidden" mb="$3">
+          {/* <Box h={300} borderRadius="$lg" overflow="hidden" mb="$3">
             <MapView
               style={{ flex: 1 }}
               initialRegion={{
@@ -318,63 +363,20 @@ export default function ResidentDashboard() {
               }}
               showsUserLocation={true}
             >
-              <Marker
-                coordinate={{ latitude: 10.936, longitude: 124.609 }}
-                title="Your Location"
-                pinColor="blue"
-              />
-
-              {collectors.map((collector, index) => (
+              {schedules.map((schedule, index) => (
                 <Marker
-                  key={collector.id}
-                  coordinate={collector.currentLocation}
-                  title={`Collector: ${collector.name}`}
-                  description={`Vehicle: ${collector.vehicle}`}
+                  key={schedule._id}
+                  title={`Truck ID: ${schedule?.truck?.truck_id}`}
+                  coordinate={{
+                    latitude: schedule?.truck?.position?.lat,
+                    longitude: schedule?.truck?.position?.lng,
+                  }}
+                  description={`Garbage Type: ${schedule?.garbage_type}`}
                   pinColor="green"
                 />
               ))}
             </MapView>
-          </Box>
-
-          <VStack space="sm">
-            {collectors.map((collector) => (
-              <HStack
-                key={collector.id}
-                space="md"
-                alignItems="center"
-                p="$2"
-                bg="$secondary50"
-                rounded="$md"
-              >
-                <Box
-                  w="$2"
-                  h="$2"
-                  bg={
-                    collector.status === "active"
-                      ? "$success500"
-                      : "$warning500"
-                  }
-                  rounded="$full"
-                />
-                <VStack flex={1} space="xs">
-                  <Text size="sm" fontWeight="$medium">
-                    {collector.name}
-                  </Text>
-                  <Text size="xs" color="$secondary600">
-                    {collector.vehicle}
-                  </Text>
-                </VStack>
-                <Badge
-                  size="sm"
-                  action={collector.status === "active" ? "success" : "warning"}
-                >
-                  <BadgeText size="xs">
-                    {collector.status === "active" ? "Active" : "On Break"}
-                  </BadgeText>
-                </Badge>
-              </HStack>
-            ))}
-          </VStack>
+          </Box> */}
         </Card>
       </VStack>
     </ScrollView>
