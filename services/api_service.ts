@@ -46,6 +46,7 @@ export interface createGarbageReportPayload {
   longitude : string;
   garbage_type : string;
   notes?: string;
+  report_type : string;
 }
 
 
@@ -58,10 +59,45 @@ export interface updateUserProfilePayload {
   email: string;
 }
 
+export interface createCollectorReportPayload {
+  user : string;
+  truck : string;
+  latitude : string;
+  longitude : string;
+  report_type : string;
+  specific_issue : string;
+  notes?: string;
+}
 
+
+export interface updateAttendanceTimeOutPayload {
+  ended_at : string;
+}
+
+
+export interface createAttendanceTimeInPayload {
+  truck : string;
+  user : string;
+  schedule : string;
+  started_at : string;
+}
+
+export interface updateTruckStatusPayload {
+  status : string;
+}
+
+
+export const getAllLoginLogSpecificUser = (id: string) => axios.get(`/logs/get_all_login_log_specific_user/${id}`);
+export const checkAttendanceSpecificUser = (id: string) => axios.get(`/collector_attendances/check_collector_attendance/${id}`);
+export const createAttendanceTimeIn = (data: createAttendanceTimeInPayload) => axios.post(`/collector_attendances/add_collector_attendance`, data);
+export const updateAttendanceTimeOut = (id: string, data: updateAttendanceTimeOutPayload) => axios.put(`/collector_attendances/update_collector_attendance_time_out/${id}`, data);
+export const getAllAttendanceSpecificUser = (id: string) => axios.get(`/collector_attendances/get_all_collector_attendance_specific_user/${id}`);
 export const updateUserProfile = (id: string, data: updateUserProfilePayload) => axios.put(`/users/update_user_profile/${id}`, data);
 export const getAllScheduleSpecifcBarangay = (id: string) => axios.get(`/schedules/get_all_schedule_specific_barangay/${id}`);
+export const getAllScheduleSpecificUser = (id: string) => axios.get(`/schedules/get_all_schedule_specific_user_garbage_collector/${id}`);
+export const getTodayScheduleSpecificUser = (id: string) => axios.get(`/schedules/get_all_schedule_current_day_specific_user/${id}`);
 export const getAllGarbageReport = (id: string) => axios.get(`/garbage_reports/get_all_garbage_report_specific_user/${id}`);
+export const getAllCollectorReport = (id: string) => axios.get(`/collector_reports/get_all_collector_report_specific_user/${id}`);
 export const getAllBarangay = () => axios.get(`/barangays/get_all_barangay`);
 export const getAllGarbageSiteSpecificBarangay = (id: string | undefined) => axios.get(`/garbage_sites/get_all_garbage_site_specific_barangay/${id}`);
 export const loginUser = (data: LoginPayload) => axios.post("/users/login_user", data);
@@ -72,4 +108,7 @@ export const verifyOTP = (data: OTPPayload) => axios.post('/otp/verify_otp', dat
 export const createOTP = (data: CreateOTPPayload) => axios.post('/otp/add_otp', data);
 export const changePasswordRecovery = (data: changePasswordRecoveryPayload) => axios.put('/users/update_user_password_recovery', data);
 export const createGarbageReport = (data: createGarbageReportPayload) => axios.post('/garbage_reports/add_garbage_report', data);
+export const createCollectorReport = (data: createCollectorReportPayload) => axios.post('/collector_reports/add_collector_report', data);
+export const updateTruckStatus = (id: string, data: updateTruckStatusPayload) => axios.put(`/trucks/update_truck_status/${id}`, data);
+
 

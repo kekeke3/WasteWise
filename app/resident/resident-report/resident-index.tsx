@@ -31,7 +31,7 @@ export interface GarbageReport {
   [key: string]: any;
 }
 
-export default function History() {
+export default function ResidentReportScreen() {
   const { user } = useContext(AuthContext)!;
   const reports = staticReports;
   const router = useRouter();

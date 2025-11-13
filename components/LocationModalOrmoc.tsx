@@ -1,19 +1,19 @@
 import { useLocation } from "@/hooks/useLocation";
 import {
-    Box,
-    Button,
-    ButtonText,
-    Heading,
-    HStack,
-    Modal,
-    ModalBackdrop,
-    ModalBody,
-    ModalContent,
-    ModalFooter,
-    ModalHeader,
-    Spinner,
-    Text,
-    VStack,
+  Box,
+  Button,
+  ButtonText,
+  Heading,
+  HStack,
+  Modal,
+  ModalBackdrop,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  Spinner,
+  Text,
+  VStack,
 } from "@gluestack-ui/themed";
 import * as Location from "expo-location";
 import React, { useState } from "react";
@@ -49,7 +49,7 @@ export const LocationModalOrmoc: React.FC<LocationModalProps> = ({
   const [manualMode, setManualMode] = useState(false);
   const [selectedSite, setSelectedSite] = useState<GarbageSite | null>(null);
   const [mapRegion, setMapRegion] = useState<Region>({
-    latitude: 11.0060, // Ormoc City coordinates
+    latitude: 11.006, // Ormoc City coordinates
     longitude: 124.6075,
     latitudeDelta: 0.0922,
     longitudeDelta: 0.0421,
@@ -76,7 +76,10 @@ export const LocationModalOrmoc: React.FC<LocationModalProps> = ({
 
       if (location) {
         // Find the nearest garbage site to current location
-        const nearestSite = findNearestSite(location.latitude, location.longitude);
+        const nearestSite = findNearestSite(
+          location.latitude,
+          location.longitude
+        );
         if (nearestSite) {
           setSelectedSite(nearestSite);
           onLocationSet(nearestSite._id);
@@ -105,10 +108,20 @@ export const LocationModalOrmoc: React.FC<LocationModalProps> = ({
     if (!garbageSites.length) return null;
 
     let nearestSite = garbageSites[0];
-    let shortestDistance = calculateDistance(lat, lng, nearestSite.position.lat, nearestSite.position.lng);
+    let shortestDistance = calculateDistance(
+      lat,
+      lng,
+      nearestSite.position.lat,
+      nearestSite.position.lng
+    );
 
-    garbageSites.forEach(site => {
-      const distance = calculateDistance(lat, lng, site.position.lat, site.position.lng);
+    garbageSites.forEach((site) => {
+      const distance = calculateDistance(
+        lat,
+        lng,
+        site.position.lat,
+        site.position.lng
+      );
       if (distance < shortestDistance) {
         shortestDistance = distance;
         nearestSite = site;
@@ -118,22 +131,29 @@ export const LocationModalOrmoc: React.FC<LocationModalProps> = ({
     return nearestSite;
   };
 
-  const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+  const calculateDistance = (
+    lat1: number,
+    lng1: number,
+    lat2: number,
+    lng2: number
+  ): number => {
     const R = 6371; // Earth's radius in km
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLng = (lng2 - lng1) * Math.PI / 180;
-    const a = 
-      Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-      Math.sin(dLng/2) * Math.sin(dLng/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLng = ((lng2 - lng1) * Math.PI) / 180;
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLng / 2) *
+        Math.sin(dLng / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   };
 
   const handleManualLocation = () => {
     setManualMode(true);
     setSelectedSite(null); // Reset selection when entering manual mode
-    
+
     // Center map on first garbage site or default location
     if (garbageSites.length > 0) {
       const firstSite = garbageSites[0];
@@ -154,10 +174,14 @@ export const LocationModalOrmoc: React.FC<LocationModalProps> = ({
   // NEW: Handle map press for area selection
   const handleMapPress = (event: any) => {
     const { coordinate } = event.nativeEvent;
-    
+
     // Find the nearest garbage site to the tapped location with a maximum distance
-    const nearestSite = findNearestSiteWithinDistance(coordinate.latitude, coordinate.longitude, 0.5); // 0.5km max distance
-    
+    const nearestSite = findNearestSiteWithinDistance(
+      coordinate.latitude,
+      coordinate.longitude,
+      0.5
+    ); // 0.5km max distance
+
     if (nearestSite) {
       setSelectedSite(nearestSite);
     } else {
@@ -170,14 +194,23 @@ export const LocationModalOrmoc: React.FC<LocationModalProps> = ({
   };
 
   // NEW: Find nearest site within a maximum distance
-  const findNearestSiteWithinDistance = (lat: number, lng: number, maxDistanceKm: number): GarbageSite | null => {
+  const findNearestSiteWithinDistance = (
+    lat: number,
+    lng: number,
+    maxDistanceKm: number
+  ): GarbageSite | null => {
     if (!garbageSites.length) return null;
 
     let nearestSite: GarbageSite | null = null;
     let shortestDistance = maxDistanceKm;
 
-    garbageSites.forEach(site => {
-      const distance = calculateDistance(lat, lng, site.position.lat, site.position.lng);
+    garbageSites.forEach((site) => {
+      const distance = calculateDistance(
+        lat,
+        lng,
+        site.position.lat,
+        site.position.lng
+      );
       if (distance < shortestDistance) {
         shortestDistance = distance;
         nearestSite = site;
@@ -219,7 +252,9 @@ export const LocationModalOrmoc: React.FC<LocationModalProps> = ({
       <ModalContent>
         <ModalHeader>
           <Heading size="lg">
-            {manualMode ? "Select Garbage Collection Site" : "Set Your Collection Site"}
+            {manualMode
+              ? "Select Garbage Collection Site"
+              : "Set Your Collection Site"}
           </Heading>
         </ModalHeader>
         <ModalBody>
@@ -250,7 +285,9 @@ export const LocationModalOrmoc: React.FC<LocationModalProps> = ({
                       }}
                       title={site.garbage_site_name}
                       description="Tap to select this site"
-                      pinColor={selectedSite?._id === site._id ? "#28a745" : "#007BFF"}
+                      pinColor={
+                        selectedSite?._id === site._id ? "#28a745" : "#007BFF"
+                      }
                       onPress={() => handleMarkerPress(site)}
                     />
                   ))}
@@ -263,7 +300,8 @@ export const LocationModalOrmoc: React.FC<LocationModalProps> = ({
                     Selected: {selectedSite.garbage_site_name}
                   </Text>
                   <Text size="xs" textAlign="center">
-                    Location: {selectedSite.position.lat.toFixed(6)}, {selectedSite.position.lng.toFixed(6)}
+                    Location: {selectedSite.position.lat.toFixed(6)},{" "}
+                    {selectedSite.position.lng.toFixed(6)}
                   </Text>
                 </Box>
               ) : (
@@ -277,7 +315,8 @@ export const LocationModalOrmoc: React.FC<LocationModalProps> = ({
           ) : (
             <VStack space="md">
               <Text size="md" textAlign="center">
-                Select your preferred garbage collection site. Available sites in your barangay are shown on the map.
+                Select your preferred garbage collection site. Available sites
+                in your barangay are shown on the map.
               </Text>
 
               <VStack space="sm">

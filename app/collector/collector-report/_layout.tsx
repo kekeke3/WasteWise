@@ -2,7 +2,7 @@ import { Stack } from "expo-router";
 import { GluestackUIProvider } from "@gluestack-ui/themed";
 import { config } from "@gluestack-ui/config";
 
-export default function HistoryLayout() {
+export default function CollectorReportLayout() {
   return (
     <GluestackUIProvider config={config}>
       <Stack
@@ -18,15 +18,15 @@ export default function HistoryLayout() {
         }}
       >
         <Stack.Screen
-          name="index"
+          name="collector-index"
           options={{
-            title: "Settings",
+            title: "History",
           }}
         />
         <Stack.Screen
-          name="update_profile"
+          name="collector-create_report"
           options={{
-            title: "Update Profile",
+            title: "Report",
           }}
         />
       </Stack>

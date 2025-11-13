@@ -14,10 +14,10 @@ import {
   VStack,
 } from "@gluestack-ui/themed";
 import { Check, MapPin, Navigation } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import MapView, { Marker, Polyline } from "react-native-maps";
 import { useAuth } from "../../context/AuthContextOrig";
-
+import { AuthContext } from "@/context/AuthContext";
 interface CollectionArea {
   id: string;
   name: string;
@@ -30,8 +30,8 @@ interface CollectionArea {
   houses: number;
 }
 
-export default function RoutesScreen() {
-  const { user } = useAuth();
+export default function CollectorRoutesScreen() {
+  const { user } = useContext(AuthContext)!;
   const [areas, setAreas] = useState<CollectionArea[]>([
     {
       id: "1",

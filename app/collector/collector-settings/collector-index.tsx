@@ -32,15 +32,12 @@ import { useFocusEffect } from "@react-navigation/native";
 import { Link, useRouter } from "expo-router";
 
 import {
-  getAllGarbageSiteSpecificBarangay,
-  changeUserResidentGarbageSite,
+  changeUserResidentGarbageSite
 } from "../../../hooks/settings_hook";
 
 
 interface GarbageSite {
   _id: string;
-  garbage_site_name: string;
-  barangay: string;
   position: {
     lat: number;
     lng: number;
@@ -49,7 +46,7 @@ interface GarbageSite {
   __v: number;
 }
 
-export default function Settings() {
+export default function CollectorSettingsScreen() {
   const { user, logout } = useContext(AuthContext)!;
   const { isOnline } = useOffline();
   const [showLogoutAlert, setShowLogoutAlert] = useState(false);
@@ -62,60 +59,13 @@ export default function Settings() {
     await logout();
   };
 
-  useFocusEffect(
-    React.useCallback(() => {
-      fetchGarbageSites();
-    }, [])
-  );
-
-  // useEffect(() => {
-  //   if (showLocationModal && user?.barangay?.barangay_name) {
-  //     fetchGarbageSites();
-  //   }
-  // }, [showLocationModal, user?.barangay?.barangay_name]);
-  
-  const fetchGarbageSites = async () => {
-    try {
-      const { data, success } = await getAllGarbageSiteSpecificBarangay(user?.barangay?._id);
-      if (success) {
-        // Store the garbage sites data in state to pass to the modal
-        setGarbageSites(data.data || []);
-      }
-    } catch (error) {
-      console.error("Error fetching garbage sites:", error);
-    }
+  const formatText = (text: string) => {
+    if (!text) return '';
+    
+    return text
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, char => char.toUpperCase());
   };
-
-  const handleLocationSet = async (site_id: string) => {
-    try {
-      setUpdatingLocation(true);
-      if (user) {
-        // Update user's garbage site
-        const response = await changeUserResidentGarbageSite(user?._id, {
-          garbage_site: site_id,
-        });
-
-        if (response.success === true) {
-          console.log("Garbage site updated successfully");
-          // You might want to refresh user data or show a success message
-        }
-      }
-    } catch (error) {
-      console.error("Error updating location:", error);
-    } finally {
-      setUpdatingLocation(false);
-      setShowLocationModal(false);
-    }
-  };
-
-  const getLocationStatus = () => {
-    if (!user?.garbage_site?.position?.lat || !user?.garbage_site?.position?.lng) {
-      return { status: "Not Set", color: "$red500", bg: "$red50" };
-    }
-    return { status: "Set", color: "$success500", bg: "$success50" };
-  };
-
-  const locationStatus = getLocationStatus();
 
   return (
     <>
@@ -151,24 +101,11 @@ export default function Settings() {
                   {user?.first_name} {user?.last_name}
                 </Text>
                 <Text color="$secondary500" size="sm">
-                  Barangay {user?.barangay?.barangay_name}
+                  {formatText(user?.role || "")}
                 </Text>
                 <Text color="$secondary500" size="sm">
                   {user?.email}
                 </Text>
-
-                {/* Location Status */}
-                <HStack space="sm" alignItems="center" mt="$1">
-                  <Box
-                    w="$2"
-                    h="$2"
-                    bg={locationStatus.color}
-                    rounded="$full"
-                  />
-                  <Text size="xs" color={locationStatus.color}>
-                    Pickup Location: {locationStatus.status}
-                  </Text>
-                </HStack>
 
                 {/* Show Coordinates if available */}
                 {user?.position?.lat && user?.position?.lng && (
@@ -189,7 +126,7 @@ export default function Settings() {
                 ACCOUNT
               </Text>
               <VStack space="xs">
-              <Link href="/resident/settings/update_profile" asChild>
+                <Link href="/collector/collector-settings/collector-update_profile" asChild>
                 <Button
                   variant="outline"
                   justifyContent="flex-start"
@@ -201,23 +138,18 @@ export default function Settings() {
                   </HStack>
                 </Button>
                 </Link>
+                <Link href="/collector/collector-settings/collector-login_history" asChild>
                 <Button
                   variant="outline"
                   justifyContent="flex-start"
                   action="secondary"
-                  onPress={() => setShowLocationModal(true)}
                 >
                   <HStack space="md" alignItems="center">
-                    <MapPin size={20} color="#666" />
-                    <VStack>
-                      <Text>Change Pickup Location</Text>
-                      <Text size="xs" color="$secondary500">
-                        Update your trash indicator pin
-                      </Text>
-                    </VStack>
+                    <User size={20} color="#666" />
+                    <Text>Login History</Text>
                   </HStack>
                 </Button>
-
+                </Link>
                 <Button
                   variant="outline"
                   justifyContent="flex-start"
@@ -289,33 +221,6 @@ export default function Settings() {
               </HStack>
             </Box>
 
-            {/* Current Location Display */}
-            {user?.position?.lat && user?.position?.lng && (
-              <Box bg="$blue50" p="$3" borderRadius="$md">
-                <VStack space="xs">
-                  <Text fontWeight="$bold" size="sm" color="$blue700">
-                    Current Pickup Location
-                  </Text>
-                  <Text size="xs" color="$blue600">
-                    Latitude: {user.position.lat.toFixed(6)}
-                  </Text>
-                  <Text size="xs" color="$blue600">
-                    Longitude: {user.position.lng.toFixed(6)}
-                  </Text>
-                  <Button
-                    variant="link"
-                    size="sm"
-                    alignSelf="flex-start"
-                    onPress={() => setShowLocationModal(true)}
-                  >
-                    <Text color="$blue600" size="xs">
-                      Change Location
-                    </Text>
-                  </Button>
-                </VStack>
-              </Box>
-            )}
-
             {/* Logout Button */}
             <Button
               variant="outline"
@@ -339,19 +244,6 @@ export default function Settings() {
         </VStack>
       </ScrollView>
 
-      {/* Location Modal */}
-      <LocationModalOrmoc
-        visible={showLocationModal}
-        onClose={() => setShowLocationModal(false)}
-        onLocationSet={handleLocationSet}
-        garbageSites={garbages || []} // Pass the garbage sites data
-      />
-
-      {/* <LocationModalOrmoc
-        visible={showLocationModal}
-        onClose={() => setShowLocationModal(false)}
-        onLocationSet={handleLocationSet}
-      /> */}
 
       {/* Logout Confirmation Dialog */}
       <AlertDialog

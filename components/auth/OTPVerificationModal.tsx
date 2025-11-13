@@ -204,7 +204,7 @@ export const OTPVerificationModal: React.FC<OTPVerificationModalProps> = ({
 
  
       if (success === true) {
-        const { success } = await verifyUser(user?._id, {
+        const { success } = await verifyUser(user?._id || "", {
           verify: true
         });
 

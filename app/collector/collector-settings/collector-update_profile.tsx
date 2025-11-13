@@ -49,7 +49,7 @@ interface ProfileFormData {
   contact_number: string;
 }
 
-export default function ProfileScreen() {
+export default function CollectorProfileScreen() {
   const { user, updateProfile, refresh } = useContext(AuthContext)!;
   const { isOnline } = useOffline();
   const router = useRouter();
@@ -103,7 +103,9 @@ export default function ProfileScreen() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (): Promise<void> => {
+  const handleSubmit = async () => {
+      // const handleSubmit = async (): Promise<void> => {
+
     if (!validateForm()) {
       alert("Please fix the errors in the form");
       return;
@@ -126,10 +128,13 @@ export default function ProfileScreen() {
         const response = await updateUserProfile(user?._id, input_data);
 
         if (response.success === true) {
-          console.log('success')
+          console.log('updated:')
           console.log(response.data.data)
-          updateProfile(response.data.data);
-          refresh();
+          console.log('updated:')
+          await updateProfile(response.data.data);
+          await refresh();
+          // router.push("/collector/collector-settings/collector-index");
+          // return;
         }
       } else {
         alert(
@@ -175,8 +180,8 @@ export default function ProfileScreen() {
                 {/* Personal Information Section */}
                 <Box>
                   <Text size="lg" fontWeight="$bold" color="$blue800" mb="$4">
-                    Personal Information
-                  </Text>
+                    Personal Information 1
+                  </Text> 
                   <VStack space="md">
                     {/* First Name */}
                     <FormControl isInvalid={!!errors.first_name}>
@@ -353,7 +358,7 @@ export default function ProfileScreen() {
                           fontWeight="$semibold"
                           color="$blue800"
                         >
-                          Gender123
+                          Gender
                         </FormControlLabelText>
                       </FormControlLabel>
                       <Select

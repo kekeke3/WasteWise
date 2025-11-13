@@ -13,9 +13,8 @@ import {
   Home,
   Settings as SettingsIcon,
 } from "lucide-react-native";
-import { useEffect, useState, useContext  } from "react";
+import { useEffect, useState, useContext } from "react";
 import { AuthContext } from "@/context/AuthContext"; // Import the correct context
-
 
 export default function ResidentLayout() {
   // const { user, updateUser } = useAuth();
@@ -46,7 +45,7 @@ export default function ResidentLayout() {
         }}
       >
         <Tabs.Screen
-          name="index"
+          name="resident-index"
           options={{
             title: "Dashboard",
             tabBarIcon: ({ color, size }) => <Home color={color} size={size} />,
@@ -54,7 +53,7 @@ export default function ResidentLayout() {
         />
 
         <Tabs.Screen
-          name="schedule"
+          name="resident-schedule"
           options={{
             title: "Schedule",
             tabBarIcon: ({ color, size }) => (
@@ -64,16 +63,7 @@ export default function ResidentLayout() {
         />
 
         <Tabs.Screen
-          name="report"
-          options={{
-            title: "Report",
-            tabBarIcon: ({ color, size }) => (
-              <History color={color} size={size} />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="track_collectors"
+          name="resident-track_collectors"
           options={{
             title: "Track",
             tabBarIcon: ({ color, size }) => (
@@ -83,7 +73,17 @@ export default function ResidentLayout() {
         />
 
         <Tabs.Screen
-          name="settings"
+          name="resident-report"
+          options={{
+            title: "Report",
+            tabBarIcon: ({ color, size }) => (
+              <History color={color} size={size} />
+            ),
+          }}
+        />
+
+        <Tabs.Screen
+          name="resident-settings"
           options={{
             title: "Settings",
             tabBarIcon: ({ color, size }) => (
