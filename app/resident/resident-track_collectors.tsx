@@ -163,10 +163,10 @@ export default function ResidentTrackCollectorsScreen() {
           <MapView
             style={{ flex: 1 }}
             initialRegion={{
-              latitude: 10.936,
-              longitude: 124.609,
-              latitudeDelta: 0.03,
-              longitudeDelta: 0.03,
+              latitude: 11.0147,
+              longitude: 124.6075,
+              latitudeDelta: 0.5,
+              longitudeDelta: 0.5,
             }}
             showsUserLocation={true}
           >

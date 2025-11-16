@@ -21,7 +21,7 @@ import {
   CloseIcon,
 } from "@gluestack-ui/themed";
 import { useRouter } from "expo-router";
-import { Truck, Calendar, MapPin, User, Info, Trash  } from "lucide-react-native";
+import { Truck, Calendar, MapPin, User, Info, Trash } from "lucide-react-native";
 import { Loader } from "../../components/ui/Loader";
 import { AuthContext } from "@/context/AuthContext";
 import { AppToast } from "@/components/ui/AppToast";
@@ -29,6 +29,8 @@ import React, { useContext, useEffect, useState } from "react";
 import { getAllScheduleSpecificUser } from "../../hooks/schedule_hook";
 import { useFocusEffect } from "@react-navigation/native";
 import { Pressable } from "react-native";
+import { useLocation } from '@/context/LocationContext';
+
 
 export interface ScheduleData {
   _id: string;
@@ -40,19 +42,19 @@ export default function CollectorSchedule() {
   const router = useRouter();
   const [schedules, setSchedules] = useState<ScheduleData[]>([]);
   const [today_schedules, setTodaySchedules] = useState<ScheduleData[]>([]);
-  const [upcomming_schedules, setUpcommingSchedules] = useState<ScheduleData[]>(
-    []
-  );
-  const [selectedSchedule, setSelectedSchedule] = useState<ScheduleData | null>(
-    null
-  );
+  const [upcomming_schedules, setUpcommingSchedules] = useState<ScheduleData[]>([]);
+  const [selectedSchedule, setSelectedSchedule] = useState<ScheduleData | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const { connectWebSocket, fetchTodayScheduleRecords } = useLocation();
+  
 
   const toast = useToast();
 
   useFocusEffect(
     React.useCallback(() => {
       fetchSchedules();
+      connectWebSocket();
+      fetchTodayScheduleRecords();
     }, [])
   );
 
@@ -452,39 +454,57 @@ export default function CollectorSchedule() {
                         {selectedSchedule?.route?.route_name}
                       </Text>
                     </HStack>
-                    <HStack
-                      justifyContent="space-between"
-                      alignItems="flex-start"
-                    >
-                      <Text color="$secondary500">Barangays:</Text>
-                      <VStack
-                        space="xs"
-                        alignItems="flex-start"
-                        flex={1}
-                        maxWidth="70%"
-                      >
-                        {selectedSchedule?.route?.merge_barangay?.map(
-                          (barangay: any, index: number) => (
-                            <HStack
-                              key={barangay._id}
-                              space="sm"
-                              alignItems="center"
-                              width="$full"
-                            >
-                              <Text color="$primary500">•</Text>
-                              <Text
-                                fontWeight="$medium"
-                                flex={1}
-                                numberOfLines={1}
-                                ellipsizeMode="tail"
+                    <VStack space="md">
+                      <HStack justifyContent="space-between" alignItems="flex-start">
+                        <Text color="$secondary500">Barangays Covered:</Text>
+                      </HStack>
+                      <HStack justifyContent="space-between" alignItems="flex-start">
+                        <VStack
+                          space="xs"
+                          alignItems="flex-start"
+                          flex={1}
+                          maxWidth="100%"
+                        >
+                          {selectedSchedule?.task?.map(
+                            (barangay: any, index: number) => (
+                              <HStack
+                                key={barangay._id}
+                                space="sm"
+                                alignItems="center"
+                                width="$full"
                               >
-                                {barangay.barangay_id?.barangay_name}
-                              </Text>
-                            </HStack>
-                          )
-                        )}
-                      </VStack>
-                    </HStack>
+                                <Text color="$primary500">•</Text>
+                                <Text
+                                  fontWeight="$medium"
+                                  flex={1}
+                                  numberOfLines={1}
+                                  ellipsizeMode="tail"
+                                >
+                                  {barangay.barangay_id?.barangay_name}
+                                </Text>
+                                <Box
+                                  bg={barangay.status === 'Completed' ? '$green500' :
+                                    barangay.status === 'Pending' ? '$yellow500' : '$gray500'}
+                                  px="$2"
+                                  py="$1"
+                                  borderRadius="$md"
+                                >
+                                  <Text
+                                    color="$white"
+                                    fontSize="$xs"
+                                    fontWeight="$bold"
+                                    textTransform="capitalize"
+                                  >
+                                    {barangay.status}
+                                  </Text>
+                                </Box>
+                              </HStack>
+                            )
+                          )}
+                        </VStack>
+                      </HStack>
+                    </VStack>
+
                   </VStack>
 
                   {/* Truck Info */}

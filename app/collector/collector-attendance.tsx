@@ -48,6 +48,9 @@ import {
 import { updateTruckStatus } from "../../hooks/truck_hook";
 import { getTodayScheduleSpecificUser } from "../../hooks/schedule_hook";
 
+import { useLocation } from '@/context/LocationContext';
+
+
 export interface AttendanceData {
   _id: string;
   user: any;
@@ -72,31 +75,31 @@ export default function CollectorAttendanceScreen() {
   const { user } = useContext(AuthContext)!;
   const router = useRouter();
   const toast = useToast();
-  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceData[]>(
-    []
-  );
+  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceData[]>([]);
   const [scheduleRecords, setScheduleRecords] = useState<ScheduleData[]>([]);
-  const [currentAttendance, setCurrentAttendance] =
-    useState<AttendanceData | null>(null);
+  const [currentAttendance, setCurrentAttendance] = useState<AttendanceData | null>(null);
   const [isClockedIn, setIsClockedIn] = useState(false);
   const [showClockModal, setShowClockModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [selectedAttendance, setSelectedAttendance] =
-    useState<AttendanceData | null>(null);
+  const [selectedAttendance, setSelectedAttendance] = useState<AttendanceData | null>(null);
   const [clockAction, setClockAction] = useState<"in" | "out">("in");
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [location, setLocation] = useState<LocationData | null>(null);
+  const { connectWebSocket, fetchTodayScheduleRecords } = useLocation();
+
 
   useFocusEffect(
     React.useCallback(() => {
       checkCurrentAttendance();
       fetchAttendanceRecords();
+      fetchTodayScheduleRecordsMain();
+      connectWebSocket();
       fetchTodayScheduleRecords();
     }, [])
   );
 
-  const fetchTodayScheduleRecords = async () => {
+  const fetchTodayScheduleRecordsMain = async () => {
     try {
       const { data, success } = await getTodayScheduleSpecificUser(
         user?._id || ""

@@ -1,5 +1,5 @@
 import { Box, Button, Input, InputField, ScrollView, Select, SelectBackdrop, SelectContent, SelectDragIndicator, SelectDragIndicatorWrapper, SelectInput, SelectItem, SelectPortal, SelectTrigger, Text, Textarea, TextareaInput, VStack } from '@gluestack-ui/themed';
-import React, { useState,   useContext } from 'react';
+import React, { useState, useContext } from 'react';
 import { AuthContext } from '../../../context/AuthContext';
 import { useOffline } from '../../../context/OfflineContext';
 import { reportService } from '../../../services/reportService';
@@ -7,6 +7,8 @@ import { Report } from '../../../types';
 import { useRouter } from "expo-router";
 
 import { createCollectorReport } from "../../../hooks/report_hook";
+import { useLocation } from '@/context/LocationContext';
+import { useFocusEffect } from "@react-navigation/native";
 
 interface ReportFormData {
   notes: string | undefined;
@@ -24,6 +26,16 @@ export default function CollectorCreateReportScreen() {
     report_type: 'uncollected'
   });
   const [loading, setLoading] = useState<boolean>(false);
+  const { connectWebSocket, fetchTodayScheduleRecords } = useLocation();
+
+
+  useFocusEffect(
+    React.useCallback(() => {
+      connectWebSocket();
+      fetchTodayScheduleRecords();
+    }, [])
+  );
+
 
   const handleSubmit = async (): Promise<void> => {
     if (!formData.specific_issue) {
@@ -50,7 +62,7 @@ export default function CollectorCreateReportScreen() {
           report_type: formData.report_type,
         }
 
-        
+
         console.log(input_data)
 
         const response = await createCollectorReport(input_data);
@@ -91,7 +103,7 @@ export default function CollectorCreateReportScreen() {
         <VStack space="md">
           <VStack space="sm">
             <Text fontWeight="$bold">Report Type</Text>
-            <Select onValueChange={(value: string) => setFormData({...formData, report_type: value})}>
+            <Select onValueChange={(value: string) => setFormData({ ...formData, report_type: value })}>
               <SelectTrigger>
                 <SelectInput placeholder="Select Report Type" />
               </SelectTrigger>
@@ -113,7 +125,7 @@ export default function CollectorCreateReportScreen() {
 
           <VStack space="sm">
             <Text fontWeight="$bold">Specific Issue</Text>
-            <Select onValueChange={(value: string) => setFormData({...formData, specific_issue: value})}>
+            <Select onValueChange={(value: string) => setFormData({ ...formData, specific_issue: value })}>
               <SelectTrigger>
                 <SelectInput placeholder="Select Specific Issue" />
               </SelectTrigger>
@@ -130,7 +142,7 @@ export default function CollectorCreateReportScreen() {
                   <SelectItem label="Mechanical Failure" value="mechanical_failure" />
                   <SelectItem label="Equipment Malfunction" value="equipment_malfunction" />
                   <SelectItem label="Route Blocked" value="route_blocked" />
-                  <SelectItem label="Road Condition" value="road_condition" />                 
+                  <SelectItem label="Road Condition" value="road_condition" />
                   <SelectItem label="Weather Hazard" value="weather_hazard" />
                   <SelectItem label="Safety Concern" value="safety_concern" />
                   <SelectItem label="Other" value="other" />
@@ -143,10 +155,10 @@ export default function CollectorCreateReportScreen() {
           <VStack space="sm">
             <Text fontWeight="$bold">Notes</Text>
             <Textarea>
-              <TextareaInput 
+              <TextareaInput
                 placeholder="Please describe the issue in detail..."
                 value={formData.notes}
-                onChangeText={(text: string) => setFormData({...formData, notes: text})}
+                onChangeText={(text: string) => setFormData({ ...formData, notes: text })}
                 multiline
                 numberOfLines={4}
               />

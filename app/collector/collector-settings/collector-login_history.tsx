@@ -29,6 +29,7 @@ import React, { useContext, useEffect, useState } from "react";
 import { getAllLoginLogSpecificUser } from "../../../hooks/login_logs_hook";
 import { useFocusEffect } from "@react-navigation/native";
 import { Pressable } from "react-native";
+import { useLocation } from '@/context/LocationContext';
 
 export interface LoginLogData {
   _id: string;
@@ -57,12 +58,15 @@ export default function CollectorLoginLogsScreen() {
   const [selectedLog, setSelectedLog] = useState<LoginLogData | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const { connectWebSocket, fetchTodayScheduleRecords } = useLocation();
 
   const toast = useToast();
 
   useFocusEffect(
     React.useCallback(() => {
       fetchLoginLogs();
+      connectWebSocket();
+      fetchTodayScheduleRecords();
     }, [])
   );
 

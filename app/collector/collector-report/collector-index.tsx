@@ -17,8 +17,10 @@ import { staticReports } from "../../../data/staticData";
 import React, { useContext, useEffect, useState } from "react";
 import { getAllCollectorReport } from "../../../hooks/report_hook";
 
+
 import { AppToast } from "@/components/ui/AppToast";
 import { AuthContext } from "@/context/AuthContext";
+import { useLocation } from '@/context/LocationContext';
 import { useFocusEffect } from "@react-navigation/native";
 
 export interface CollectorReport {
@@ -37,11 +39,14 @@ export default function CollectorReportScreen() {
   const router = useRouter();
   const toast = useToast();
   const [collectorReports, setCollectorReports] = useState<CollectorReport[]>([]);
+    const { connectWebSocket, fetchTodayScheduleRecords } = useLocation();
 
 
   useFocusEffect(
     React.useCallback(() => {
       fetchCollectorReports();
+      connectWebSocket();
+      fetchTodayScheduleRecords();
     }, [])
   );
 

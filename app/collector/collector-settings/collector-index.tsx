@@ -34,7 +34,7 @@ import { Link, useRouter } from "expo-router";
 import {
   changeUserResidentGarbageSite
 } from "../../../hooks/settings_hook";
-
+import { useLocation } from '@/context/LocationContext';
 
 interface GarbageSite {
   _id: string;
@@ -53,6 +53,14 @@ export default function CollectorSettingsScreen() {
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [updatingLocation, setUpdatingLocation] = useState(false);
   const [garbages, setGarbageSites] = useState<GarbageSite[]>([]);
+  const { connectWebSocket, fetchTodayScheduleRecords } = useLocation();
+
+  useFocusEffect(
+    React.useCallback(() => {
+      connectWebSocket();
+      fetchTodayScheduleRecords();
+    }, [])
+  );
 
   const handleLogout = async () => {
     setShowLogoutAlert(false);

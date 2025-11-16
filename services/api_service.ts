@@ -86,7 +86,14 @@ export interface updateTruckStatusPayload {
   status : string;
 }
 
+export interface updateCollectionStatusPayload {
+  task_updates: {
+    task_id: string;
+    status: string;
+  }[];
+}
 
+export const updateScheduleCollectionStatus = (id: string, data: updateCollectionStatusPayload) => axios.put(`/schedules/update_schedule_garbage_collection_status/${id}`, data);
 export const getAllLoginLogSpecificUser = (id: string) => axios.get(`/logs/get_all_login_log_specific_user/${id}`);
 export const checkAttendanceSpecificUser = (id: string) => axios.get(`/collector_attendances/check_collector_attendance/${id}`);
 export const createAttendanceTimeIn = (data: createAttendanceTimeInPayload) => axios.post(`/collector_attendances/add_collector_attendance`, data);

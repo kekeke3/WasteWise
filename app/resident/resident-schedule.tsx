@@ -445,39 +445,56 @@ export default function ResidentScheduleScreen() {
                         {selectedSchedule?.route?.route_name}
                       </Text>
                     </HStack>
-                    <HStack
-                      justifyContent="space-between"
-                      alignItems="flex-start"
-                    >
-                      <Text color="$secondary500">Barangays:</Text>
-                      <VStack
-                        space="xs"
-                        alignItems="flex-start"
-                        flex={1}
-                        maxWidth="70%"
-                      >
-                        {selectedSchedule?.route?.merge_barangay?.map(
-                          (barangay: any, index: number) => (
-                            <HStack
-                              key={barangay._id}
-                              space="sm"
-                              alignItems="center"
-                              width="$full"
-                            >
-                              <Text color="$primary500">•</Text>
-                              <Text
-                                fontWeight="$medium"
-                                flex={1}
-                                numberOfLines={1}
-                                ellipsizeMode="tail"
+                    <VStack space="md">
+                      <HStack justifyContent="space-between" alignItems="flex-start">
+                        <Text color="$secondary500">Barangays Covered:</Text>
+                      </HStack>
+                      <HStack justifyContent="space-between" alignItems="flex-start">
+                        <VStack
+                          space="xs"
+                          alignItems="flex-start"
+                          flex={1}
+                          maxWidth="100%"
+                        >
+                          {selectedSchedule?.task?.map(
+                            (barangay: any, index: number) => (
+                              <HStack
+                                key={barangay._id}
+                                space="sm"
+                                alignItems="center"
+                                width="$full"
                               >
-                                {barangay.barangay_id?.barangay_name}
-                              </Text>
-                            </HStack>
-                          )
-                        )}
-                      </VStack>
-                    </HStack>
+                                <Text color="$primary500">•</Text>
+                                <Text
+                                  fontWeight="$medium"
+                                  flex={1}
+                                  numberOfLines={1}
+                                  ellipsizeMode="tail"
+                                >
+                                  {barangay.barangay_id?.barangay_name}
+                                </Text>
+                                <Box
+                                  bg={barangay.status === 'Completed' ? '$green500' :
+                                      barangay.status === 'Pending' ? '$yellow500' : '$gray500'}
+                                  px="$2"
+                                  py="$1"
+                                  borderRadius="$md"
+                                >
+                                  <Text
+                                    color="$white"
+                                    fontSize="$xs"
+                                    fontWeight="$bold"
+                                    textTransform="capitalize"
+                                  >
+                                    {barangay.status}
+                                  </Text>
+                                </Box>
+                              </HStack>
+                            )
+                          )}
+                        </VStack>
+                      </HStack>
+                    </VStack>
                   </VStack>
 
                   {/* Truck Info */}

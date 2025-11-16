@@ -40,6 +40,8 @@ import { useFocusEffect } from "@react-navigation/native";
 import { getAllDataDashboardCollector } from "../../hooks/dashboard_hook";
 
 import { AppToast } from "@/components/ui/AppToast";
+import { useLocation } from '@/context/LocationContext';
+
 
 export interface ScheduleData {
   _id: string;
@@ -51,6 +53,8 @@ export default function CollectorDashboard() {
   const router = useRouter();
   const toast = useToast();
   const [schedules, setSchedules] = useState<ScheduleData[]>([]);
+    const { connectWebSocket, fetchTodayScheduleRecords } = useLocation();
+
 
   // Use static data instead of API call
   const collectors = staticCollectors;
@@ -70,6 +74,8 @@ export default function CollectorDashboard() {
   useFocusEffect(
     React.useCallback(() => {
       fetchGarbageReports();
+      connectWebSocket();
+      fetchTodayScheduleRecords();
       // refresh();
     }, [])
   );

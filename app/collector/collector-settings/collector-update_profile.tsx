@@ -29,7 +29,8 @@ import React, { useContext, useState } from "react";
 import { AuthContext } from "../../../context/AuthContext";
 import { useOffline } from "../../../context/OfflineContext";
 
-
+import { useLocation } from '@/context/LocationContext';
+import { useFocusEffect } from "@react-navigation/native";
 
 import { updateUserProfile } from "../../../hooks/update_profile_hook";
 
@@ -53,6 +54,7 @@ export default function CollectorProfileScreen() {
   const { user, updateProfile, refresh } = useContext(AuthContext)!;
   const { isOnline } = useOffline();
   const router = useRouter();
+  const { connectWebSocket, fetchTodayScheduleRecords } = useLocation();
 
   const [formData, setFormData] = useState<ProfileFormData>({
     first_name: user?.first_name || "",
@@ -65,6 +67,14 @@ export default function CollectorProfileScreen() {
 
   const [loading, setLoading] = useState<boolean>(false);
   const [errors, setErrors] = useState<Partial<ProfileFormData>>({});
+
+  useFocusEffect(
+    React.useCallback(() => {
+      connectWebSocket();
+      fetchTodayScheduleRecords();
+    }, [])
+  );
+
 
   const validateForm = (): boolean => {
     const newErrors: Partial<ProfileFormData> = {};
